@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 .httr-oauth
+BGS_Cache
+.httr-oauth-SUSPENDED
+data
