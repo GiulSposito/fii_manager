@@ -68,7 +68,7 @@ updateProventos <- function(){
   proventos.fetched %>%
     mutate( proventos = html.page %>% lapply(.processProventos) ) %>% 
     select( -inform.url, -html.page ) %>%
-    unnest() %>% View()
+    unnest() %>% 
     arrange( ticker, desc(data.pagamento) ) -> proventos.new
   
   if(file.exists(.PROVENTOS_FILENAME)){
