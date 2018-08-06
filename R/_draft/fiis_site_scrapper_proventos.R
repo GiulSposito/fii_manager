@@ -2,9 +2,7 @@ library(rvest)
 library(tidyverse)
 library(lubridate)
 source("./R/_draft/common.R")
-source("./fii/portfolio.R")
 
-.PROVENTOS_FILENAME <- "./fii/data/fii_proventos.rds"
 
 .processProventos <- function(pg){ 
   pg %>%
@@ -12,7 +10,7 @@ source("./fii/portfolio.R")
     html_text() %>%
     str_to_lower() %>% 
     str_subset(".*informou.*distribui.*rendimento.*") %>% 
-    str_extract_all("(\\d\\d\\/\\d\\d\\/\\d+)|(R\\$ \\d+,\\d*)|(\\d+,\\d*)",T) %>%
+    str_extract_all("(\\d\\d\\/\\d\\d\\/\\d+)|(\\d+\\.\\d+,\\d*)|(R\\$ \\d+,\\d*)|(\\d+,\\d*)",T) %>%
     as.tibble() -> extraction
   
   extraction %>%
@@ -71,17 +69,19 @@ updateProventos <- function(){
     unnest() %>% 
     arrange( ticker, desc(data.pagamento) ) -> proventos.new
   
-  if(file.exists(.PROVENTOS_FILENAME)){
-    proventos <- readRDS(.PROVENTOS_FILENAME)
-  } else {
-    proventos <- tibble()
-  }
+  saveRDS(proventos.new,"./data/proventos.rds")
   
-  proventos %>%
-    bind_rows(proventos.new) %>%
-    distinct() %T>%
-    saveRDS(.PROVENTOS_FILENAME) %>%
-    return()
+  # if(file.exists(.PROVENTOS_FILENAME)){
+  #   proventos <- readRDS(.PROVENTOS_FILENAME)
+  # } else {
+  #   proventos <- tibble()
+  # }
+  # 
+  # proventos %>%
+  #   bind_rows(proventos.new) %>%
+  #   distinct() %T>%
+  #   saveRDS(.PROVENTOS_FILENAME) %>%
+  #   return()
 }
 
 getProventos <- function() readRDS(.PROVENTOS_FILENAME)
