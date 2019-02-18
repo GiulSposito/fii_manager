@@ -8,13 +8,13 @@ library(lubridate)
 )
 
 updatePortfolio <- function(key="1k0u_xV21AUEBzfi_e8rZtiAgEJD2OGsQu0QW-IJ_kCU", ws=1,
-                            fname="./fii/data/portfolio.R"){
+                            fname="./data/portfolio.rds"){
   gs_auth(new_user = T)
   gs_key(key) %>%
     gs_read(ws=1) %>%
     as.tibble() %>%
     select(Ativo, Qtd, Valor, Taxas, Total, Carteira, Data) %>%
-    setNames(c("ativo","volume","cotacao","taxas", "valor", "carteira", "data")) %>%
+    setNames(c("ticker","volume","cotacao","taxas", "valor", "carteira", "data")) %>%
     filter(complete.cases(.)) %>%
     mutate(
       cotacao.compra = .parseRealValue(cotacao),
@@ -23,12 +23,12 @@ updatePortfolio <- function(key="1k0u_xV21AUEBzfi_e8rZtiAgEJD2OGsQu0QW-IJ_kCU", 
       carteira       = as.factor(carteira),
       data.compra    = ymd(data)
     ) %>%
-    select(ativo, volume, cotacao.compra, taxas, valor.invest, carteira, data.compra) %T>%
+    select(ticker, volume, cotacao.compra, taxas, valor.invest, carteira, data.compra) %T>%
     saveRDS(fname) %>%
     return()
 }
 
-getPortfolio <- function(fname="./fii/data/portfolio.R"){
+getPortfolio <- function(fname="./data/portfolio.rds"){
   readRDS(fname) %>%
     return()
 }

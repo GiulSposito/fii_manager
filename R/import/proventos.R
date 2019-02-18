@@ -1,19 +1,19 @@
 library(rvest)
 library(tidyverse)
 library(lubridate)
-source("./fii/common.R")
-source("./fii/portfolio.R")
+source("./R/_draft/common.R")
 
-.PROVENTOS_FILENAME <- "./fii/data/fii_proventos.rds"
+.PROVENTOS_FILENAME <- "./data/fii_proventos.rds"
 
 .processProventos <- function(pg){ 
   pg %>%
     html_nodes("div.entry-content ul li") %>%
     html_text() %>%
-    .[grep("distribuição.*Rendimento",.)] %>%
+    .[grep("distribuiÃ§Ã£o.*Rendimento",.)] %>%
     gsub("\\.","",.) %>%
     str_extract_all("(\\d\\d\\/\\d\\d\\/\\d+)|(R\\$ \\d+,\\d*)|(\\d+,\\d*)",T) %>%
     as.tibble() %>%
+    select(1:6) %>% 
     set_names(c("data.update", "valor","data.pagamento",
                 "data.base","cota.base","rendimento")) %>%
     mutate(
@@ -29,23 +29,26 @@ source("./fii/portfolio.R")
 }
 
 
-updateProventos <- function(){
+updateProventos <- function(port=portfolio){
 
-  port <- getPortfolio()
-  
   url.base <- "http://fiis.com.br/"
   
   port %>%
-    select(ativo) %>%
+    select(ticker) %>%
     distinct() %>%
-    mutate( inform.url = paste0(url.base,ativo) ) %>%
+    mutate( inform.url = paste0(url.base,ticker) ) %>%
     mutate( html.page = inform.url %>% map(read_html) ) -> proventos.fetched
   
   proventos.fetched %>%
-    mutate( proventos = html.page %>% lapply(.processProventos) ) %>%
+    mutate( proventos = map2(ticker, html.page, function(.x,.y){
+      print(.x)
+      .y %>% 
+        .processProventos()
+      })
+    ) %>%
     select( -inform.url, -html.page ) %>%
     unnest() %>%
-    arrange( ativo, desc(data.pagamento) ) -> proventos.new
+    arrange( ticker, desc(data.pagamento) ) -> proventos.new
   
   if(file.exists(.PROVENTOS_FILENAME)){
     proventos <- readRDS(.PROVENTOS_FILENAME)

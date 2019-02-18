@@ -10,7 +10,7 @@ parseRealValue <- function(x) parse_number(
 
 # key for my personal spreadsheet
 key <- "1k0u_xV21AUEBzfi_e8rZtiAgEJD2OGsQu0QW-IJ_kCU"
-gs_auth(new_user = T)
+gs_auth()
 
 # import data
 spreadsheet <- gs_key(key) %>%
@@ -33,3 +33,8 @@ portfolio <- spreadsheet %>%
 # save it locally
 portfolio %>% 
   saveRDS("./data/portfolio.rds")
+
+getPortfolio <- function(fname="./data/portfolio.rds"){
+  readRDS(fname) %>%
+    return()
+}
