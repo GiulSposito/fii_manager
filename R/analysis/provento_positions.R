@@ -38,17 +38,22 @@ prov.position %>%
 
 ggplotly(g)
 
+## novo provento beta #######################
+
+prov %>% 
+  group_by(ticker) %>% 
+  filter( data.pagamento >= max(data.pagamento)-months(6) ) %>% 
+  summarise( n = n(),
+          rnd.avg = mean(rendimento),
+          rnd.sd  = sd(rendimento) ) %>% 
+  ungroup() -> prov.beta
 
 
-x <- prov.position[1,]$date
-
-now() %>% class()
-
-
-%>% 
-  ggplot(aes(x=open.date, y=ret.perc, color=ticker)) +
-  geom_point(aes(size=position.open)) +
-  geom_hline(aes(yintercept=0), color="red", linetype=2) +
+prov.beta %>% 
+  ggplot(aes(x=rnd.sd, y=rnd.avg, color=ticker, size=n)) +
+  geom_point() +
   theme_minimal() -> g
 
 ggplotly(g)
+  
+

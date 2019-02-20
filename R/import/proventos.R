@@ -6,6 +6,7 @@ source("./R/_draft/common.R")
 .PROVENTOS_FILENAME <- "./data/fii_proventos.rds"
 
 .processProventos <- function(pg){ 
+  class(pg)
   pg %>%
     html_nodes("div.entry-content ul li") %>%
     html_text() %>%
@@ -17,12 +18,12 @@ source("./R/_draft/common.R")
     set_names(c("data.update", "valor","data.pagamento",
                 "data.base","cota.base","rendimento")) %>%
     mutate(
-      data.update = dmy(data.update),
-      valor       = .parseRealValue(valor),
+      data.update    = dmy(data.update),
+      valor          = .parseRealValue(valor),
       data.pagamento = dmy(data.pagamento), 
-      data.base = dmy(data.base), 
-      cota.base = .parseRealValue(cota.base),
-      rendimento = .parseNumPtBr(rendimento)
+      data.base      = dmy(data.base), 
+      cota.base      = .parseRealValue(cota.base),
+      rendimento     = .parseNumPtBr(rendimento)
     ) %>%
     distinct() %>%
     return()
@@ -42,10 +43,8 @@ updateProventos <- function(port=portfolio){
   proventos.fetched %>%
     mutate( proventos = map2(ticker, html.page, function(.x,.y){
       print(.x)
-      .y %>% 
-        .processProventos()
-      })
-    ) %>%
+      .processProventos(.y)
+    })) %>%
     select( -inform.url, -html.page ) %>%
     unnest() %>%
     arrange( ticker, desc(data.pagamento) ) -> proventos.new
