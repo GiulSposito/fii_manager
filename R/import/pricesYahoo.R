@@ -2,7 +2,7 @@ library(BatchGetSymbols)
 library(lubridate)
 library(tidyverse)
 
-getPrices <- function(.tickers, .firstDate=NULL){
+getTickersPrice <- function(.tickers, .firstDate=NULL){
   
   if(is.null(.firstDate)) .firstDate=now()-years(2)
   

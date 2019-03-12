@@ -8,31 +8,32 @@ parseRealValue <- function(x) parse_number(
     locale=locale(grouping_mark=".", decimal_mark=",")
   )
 
-# key for my personal spreadsheet
-key <- "1k0u_xV21AUEBzfi_e8rZtiAgEJD2OGsQu0QW-IJ_kCU"
-gs_auth()
-
-# import data
-spreadsheet <- gs_key(key) %>%
-  gs_read(ws=1) %>%
-  as.tibble()
-
-# format data types
-portfolio <- spreadsheet %>% 
-  select(Data, Ativo, Qtd, Valor, Taxas, Total, Carteira) %>%
-  setNames(c("date","ticker","volume","price","taxes", "value", "portfolio")) %>%
-  filter(complete.cases(.)) %>%
-  mutate(
-    price = parseRealValue(price),
-    taxes   = parseRealValue(taxes),
-    value   = parseRealValue(value),
-    portfolio = as.factor(portfolio),
-    date    = ymd(date)
-  )
-
-# save it locally
-portfolio %>% 
-  saveRDS("./data/portfolio.rds")
+updatePortfolio <- function(.file="./data/portfolio.rds", .key="1k0u_xV21AUEBzfi_e8rZtiAgEJD2OGsQu0QW-IJ_kCU"){
+  
+  # import data
+  gs_auth()
+  spreadsheet <- gs_key(.key) %>%
+    gs_read(ws=1) %>%
+    as.tibble()
+  
+  # format data types
+  portfolio <- spreadsheet %>% 
+    select(Data, Ativo, Qtd, Valor, Taxas, Total, Carteira) %>%
+    setNames(c("date","ticker","volume","price","taxes", "value", "portfolio")) %>%
+    filter(complete.cases(.)) %>%
+    mutate(
+      price = parseRealValue(price),
+      taxes   = parseRealValue(taxes),
+      value   = parseRealValue(value),
+      portfolio = as.factor(portfolio),
+      date    = ymd(date)
+    )
+  
+  # save it locally
+  portfolio %T>% 
+    saveRDS(.file) %>% 
+    return()
+}
 
 getPortfolio <- function(fname="./data/portfolio.rds"){
   readRDS(fname) %>%
