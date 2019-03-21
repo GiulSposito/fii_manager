@@ -27,3 +27,5 @@ port.position %>%
   geom_point(aes(color=ticker, size=position.close)) +
   geom_label_repel(aes(label=ticker,color=ticker),size=2) +
   theme_minimal()
+
+

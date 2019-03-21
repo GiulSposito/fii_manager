@@ -13,7 +13,10 @@ getTickersPrice <- function(.tickers, .firstDate=NULL){
       tickers = .,
       first.date = .firstDate,
       thresh.bad.data = 0.001
-    ) %>% 
+    ) %$%
+    as.tibble(df.tickers) %>% 
+    mutate(ticker = gsub(".SA","",ticker)) %>% 
+    distinct() %>%
     return()
 }
 
