@@ -36,7 +36,8 @@ updatePortfolioPrices <- function(){
   cotacoes$df.tickers %>%
     as.tibble() %>%
     mutate(ticker = gsub(".SA","",ticker)) %>% 
-    distinct() %>% 
-    saveRDS("./data/price.rds")
+    distinct() %T>% 
+    saveRDS("./data/price.rds") %>% 
+    return()
 }
 
