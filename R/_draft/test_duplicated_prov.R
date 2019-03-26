@@ -62,18 +62,17 @@ prov.corrigidos %>%
   ggplot(aes(x=data.pagamento, y=valor, group=ticker)) + 
   geom_line(aes(color=ticker)) +
   theme_minimal() -> g
-
 library(plotly)
 ggplotly(g)
 
+# tabela de proventos splitados com base na data de pagamento (precisa ver isso aí!)
 splited.proventos <- tibble(
   ticker = c("HGBS11", "HGRE11", "HGLG11", "GRLV11", "CBOP11"),
-  date   = rep(ymd(20180403),length(splited.tickers)),
-  factor = rep(0.1, length(splited.tickers))
+  split.date   = rep(ymd(20180413),length(splited.tickers)),
+  split.factor = rep(0.1, length(splited.tickers))
 )
 
-
-
+# visualiza distribuição mensal dos proventos splitados
 prov.corrigidos %>%
   filter( ticker %in% splited.tickers ) %>% 
   select(ticker, data.pagamento, valor) %>% 
@@ -81,3 +80,28 @@ prov.corrigidos %>%
   geom_line(aes(color=ticker)) +
   theme_minimal() -> g
 ggplotly(g)
+
+# corrige os proventos que sofreram split e plota
+prov.corrigidos %>% 
+  left_join(splited.proventos, by="ticker") %>% 
+  mutate(
+    valor     = case_when( ( !is.na(split.factor) & (data.pagamento <= split.date)) ~ valor     * split.factor, TRUE ~ valor ),
+    cota.base = case_when( ( !is.na(split.factor) & (data.pagamento <= split.date)) ~ cota.base * split.factor, TRUE ~ valor )
+  ) %>%
+  select(ticker, data.pagamento, valor) %>% 
+  ggplot(aes(x=data.pagamento, y=valor, group=ticker)) + 
+  geom_line(aes(color=ticker)) +
+  theme_minimal() -> g
+ggplotly(g)
+
+# corrige proventos
+prov.corrigidos %>% 
+  left_join(splited.proventos, by="ticker") %>% 
+  mutate(
+    valor     = case_when( ( !is.na(split.factor) & (data.pagamento <= split.date)) ~ valor     * split.factor, TRUE ~ valor ),
+    cota.base = case_when( ( !is.na(split.factor) & (data.pagamento <= split.date)) ~ cota.base * split.factor, TRUE ~ valor )
+  ) %>% 
+  select( -split.date, -split.factor ) -> prov.corr.splited
+
+prov.corr.splited %>% 
+  saveRDS("./data/fii_proventos.rds")
