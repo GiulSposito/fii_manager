@@ -23,8 +23,7 @@ prov.updt %>%
 prov.updt %>% 
   filter( complete.cases(.) ) %>% 
   mutate( data.mes = floor_date(data.pagamento, unit = "months")) %>%  
-  inner_join(prov.duplicado) %>% 
-  View()
+  inner_join(prov.duplicado)
 
 # pega os proventos que são classificados como correção
 prov.updt %>% 
@@ -89,7 +88,7 @@ prov.corrigidos %>%
   left_join(splited.proventos, by="ticker") %>% 
   mutate(
     valor     = case_when( ( !is.na(split.factor) & (data.pagamento <= split.date)) ~ valor     * split.factor, TRUE ~ valor ),
-    cota.base = case_when( ( !is.na(split.factor) & (data.pagamento <= split.date)) ~ cota.base * split.factor, TRUE ~ valor )
+    cota.base = case_when( ( !is.na(split.factor) & (data.pagamento <= split.date)) ~ cota.base * split.factor, TRUE ~ cota.base )
   ) %>%
   select(ticker, data.pagamento, valor) %>% 
   ggplot(aes(x=data.pagamento, y=valor, group=ticker)) + 
@@ -102,7 +101,7 @@ prov.corrigidos %>%
   left_join(splited.proventos, by="ticker") %>% 
   mutate(
     valor     = case_when( ( !is.na(split.factor) & (data.pagamento <= split.date)) ~ valor     * split.factor, TRUE ~ valor ),
-    cota.base = case_when( ( !is.na(split.factor) & (data.pagamento <= split.date)) ~ cota.base * split.factor, TRUE ~ valor )
+    cota.base = case_when( ( !is.na(split.factor) & (data.pagamento <= split.date)) ~ cota.base * split.factor, TRUE ~ cota.base )
   ) %>% 
   select( -split.date, -split.factor ) -> prov.corr.splited
 
