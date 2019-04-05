@@ -1,6 +1,8 @@
 # import os proventos do site www.fiis.com.br
 port$ticker %>% 
+  c("SDIL11","VGIR11","HGRU11","IRDM11", "RBRF11", "RBRR11","TRLX11","THRA11") %>% 
   unique() %>% 
+  sort() %>% 
   importProventos() %>% 
   filter( complete.cases(.) ) -> prov.updt
 
@@ -66,8 +68,9 @@ library(plotly)
 ggplotly(g)
 
 # tabela de proventos splitados com base na data de pagamento (precisa ver isso aí!)
+splited.tickers <- c("HGBS11", "HGRE11", "HGLG11", "GRLV11", "CBOP11")
 splited.proventos <- tibble(
-  ticker = c("HGBS11", "HGRE11", "HGLG11", "GRLV11", "CBOP11"),
+  ticker = splited.tickers,
   split.date   = rep(ymd(20180413),length(splited.tickers)),
   split.factor = rep(0.1, length(splited.tickers))
 )
