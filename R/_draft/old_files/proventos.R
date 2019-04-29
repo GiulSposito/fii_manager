@@ -13,7 +13,7 @@ source("./R/_draft/common.R")
     .[grep("distribuição.*Rendimento",.)] %>%
     gsub("\\.","",.) %>%
     str_extract_all("(\\d\\d\\/\\d\\d\\/\\d+)|(R\\$ \\d+,\\d*)|(\\d+,\\d*)",T) %>%
-    as.tibble() %>%
+    as_tibble() %>%
     select(1:6) %>% 
     set_names(c("data.update", "valor","data.pagamento",
                 "data.base","cota.base","rendimento")) %>%
