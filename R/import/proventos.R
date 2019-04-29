@@ -33,7 +33,7 @@ library(rvest)
   dist.rend %>% 
     gsub("\\.","",.) %>%
     str_extract_all("(\\d\\d\\/\\d\\d\\/\\d+)|(R\\$ \\d+,\\d*)|(\\d+,\\d*)",T) %>%
-    as.tibble() %>%
+    as.tibble() %>% 
     select(1:6) %>% 
     set_names(c("data.update", "valor","data.pagamento",
                 "data.base","cota.base","rendimento")) %>%
@@ -66,9 +66,8 @@ importProventos <- function(.tickers){
     paste0(url.base,.) %>% 
     map(safe_read_html) %>% 
     pluck("result") -> pages
-  
-  pages %>% 
-    map(.processProventos) -> provs
+
+  provs <- map(pages, .processProventos)
 
   proventos.new <- tibble(
       ticker = unique(.tickers),
