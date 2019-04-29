@@ -2,6 +2,9 @@ library(BatchGetSymbols)
 library(lubridate)
 library(tidyverse)
 
+.PRICE_FILENAME = "./data/price.rds"
+
+# get an specific git prices
 getTickersPrice <- function(.tickers, .firstDate=NULL){
   
   if(is.null(.firstDate)) .firstDate=now()-years(2)
@@ -20,12 +23,12 @@ getTickersPrice <- function(.tickers, .firstDate=NULL){
     return()
 }
 
-updatePortfolioPrices <- function(){
+# update the prices of portifolio tickers
+updatePortfolioPrices <- function(.portfolio, 
+                                  .priceFilename=.PRICE_FILENAME){
   
-  portfolio <- readRDS("./data/portfolio.rds")
-  
-  tickers <- portfolio$ticker %>% unique() %>% c("IFIX") %>% paste0(".SA")
-  firstdate <- portfolio$date %>% min()
+  tickers <- .portfolio$ticker %>% unique() %>% paste0(".SA") %>% c("IFIX")
+  firstdate <- .portfolio$date %>% min()
   
   cotacoes <- BatchGetSymbols(
     tickers = tickers,  
@@ -37,7 +40,7 @@ updatePortfolioPrices <- function(){
     as.tibble() %>%
     mutate(ticker = gsub(".SA","",ticker)) %>% 
     distinct() %T>% 
-    saveRDS("./data/price.rds") %>% 
+    saveRDS(.priceFilename) %>% 
     return()
 }
 
