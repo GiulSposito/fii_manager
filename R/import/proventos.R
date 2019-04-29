@@ -14,10 +14,11 @@ library(rvest)
 .parseNumPtBr <- function(x) parse_number(x, locale=locale(grouping_mark=".", decimal_mark=","))
 
 .processProventos <- function(pg){ 
-  class(pg)
+  ## print(class(pg))
   
   # retorna uma lista vazia para as falhas
   if (is.null(pg)) return(list())
+  
   
   # isola updates de distribuicao
   pg %>%
@@ -54,32 +55,28 @@ library(rvest)
     return()
 }
 
+# faz o scrapping e tratamento dos proventos
+# tirados do site www.fiis.com.br
+importProventos <- function(.tickers, .url_base = "http://fiis.com.br/"){
 
-importProventos <- function(.tickers){
-
-  url.base <- "http://fiis.com.br/"
+  # funcao para fazer o "fetch" da pagina
+  # de maneira segura (sem falhar)
+  safe_read_html <- possibly(read_html, otherwise = list())
+  safe_process   <- possibly(.processProventos, otherwise = list())
   
-  safe_read_html <- safely(read_html)
+  # ira montar um tibble com os tickers para scrapear e tratar
+  tibble( ticker = unique(.tickers) ) %>% 
+    mutate( url = paste0(.url_base,ticker) ) %>% 
+    mutate( page = map(url, safe_read_html)) -> tickers_page
   
-  .tickers %>%
-    unique() %>%
-    paste0(url.base,.) %>% 
-    map(safe_read_html) %>% 
-    pluck("result") -> pages
-
-  provs <- map(pages, .processProventos)
-
-  proventos.new <- tibble(
-      ticker = unique(.tickers),
-      proventos = provs 
-    ) %>% 
-    # remove listas vazias (caso de erro de importacao)
-    filter(map(proventos, length)>0) %>% 
-    unnest(proventos) %>%
-    arrange( ticker, desc(data.pagamento) )
-  
-  return(proventos.new)
-
+  tickers_page %>% 
+    filter( map(page, length)>0 ) %>% 
+    mutate( proventos = map(page, .processProventos) ) %>% 
+    filter( map(proventos, length)>0 ) %>% 
+    select( -url, -page ) %>% 
+    unnest( proventos ) %>% 
+    arrange( ticker, desc(data.pagamento) ) %>% 
+    return()
 }
 
 getProventos <- function() readRDS(.PROVENTOS_FILENAME) 
