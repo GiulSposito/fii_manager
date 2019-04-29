@@ -2,13 +2,16 @@ library(tidyverse)
 library(googlesheets)
 library(lubridate)
 
+.PORTFOLIO_FILENAME = "./data/portfolio.rds"
+
 # function to deal with formatted money from spreadsheet
-parseRealValue <- function(x) parse_number(
+.parseRealValue <- function(x) parse_number(
     gsub(pattern = "R$ *", replacement = "", x = x), 
     locale=locale(grouping_mark=".", decimal_mark=",")
   )
 
-updatePortfolio <- function(.file="./data/portfolio.rds", .key="1k0u_xV21AUEBzfi_e8rZtiAgEJD2OGsQu0QW-IJ_kCU"){
+# function to repimport FII portfolio from google sheets
+updatePortfolio <- function(.file=.PORTFOLIO_FILENAME, .key="1k0u_xV21AUEBzfi_e8rZtiAgEJD2OGsQu0QW-IJ_kCU"){
   
   # import data
   gs_auth()
@@ -22,9 +25,9 @@ updatePortfolio <- function(.file="./data/portfolio.rds", .key="1k0u_xV21AUEBzfi
     setNames(c("date","ticker","volume","price","taxes", "value", "portfolio")) %>%
     filter(complete.cases(.)) %>%
     mutate(
-      price = parseRealValue(price),
-      taxes   = parseRealValue(taxes),
-      value   = parseRealValue(value),
+      price = .parseRealValue(price),
+      taxes   = .parseRealValue(taxes),
+      value   = .parseRealValue(value),
       portfolio = as.factor(portfolio),
       date    = ymd(date)
     )
@@ -35,7 +38,8 @@ updatePortfolio <- function(.file="./data/portfolio.rds", .key="1k0u_xV21AUEBzfi
     return()
 }
 
-getPortfolio <- function(fname="./data/portfolio.rds"){
+# read Local Portfolio
+getPortfolio <- function(fname=.PORTFOLIO_FILENAME){
   readRDS(fname) %>%
     return()
 }
