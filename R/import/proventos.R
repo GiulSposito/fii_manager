@@ -1,9 +1,17 @@
 library(tidyverse)
 library(lubridate)
 library(rvest)
-source("./R/_draft/common.R")
 
 .PROVENTOS_FILENAME <- "./data/fii_proventos.rds"
+
+# parse real values
+.parseRealValue <- function(x) parse_number(
+  gsub(pattern = "R$ *", replacement = "", x = x), 
+  locale=locale(grouping_mark=".", decimal_mark=",")
+)
+
+# parse num with locale ptBR
+.parseNumPtBr <- function(x) parse_number(x, locale=locale(grouping_mark=".", decimal_mark=","))
 
 .processProventos <- function(pg){ 
   class(pg)
@@ -47,13 +55,13 @@ source("./R/_draft/common.R")
 }
 
 
-importProventos <- function(tickers){
+importProventos <- function(.tickers){
 
   url.base <- "http://fiis.com.br/"
   
   safe_read_html <- safely(read_html)
   
-  tickers %>%
+  .tickers %>%
     unique() %>%
     paste0(url.base,.) %>% 
     map(safe_read_html) %>% 
@@ -63,7 +71,7 @@ importProventos <- function(tickers){
     map(.processProventos) -> provs
 
   proventos.new <- tibble(
-      ticker = unique(tickers),
+      ticker = unique(.tickers),
       proventos = provs 
     ) %>% 
     # remove listas vazias (caso de erro de importacao)
@@ -76,4 +84,23 @@ importProventos <- function(tickers){
 }
 
 getProventos <- function() readRDS(.PROVENTOS_FILENAME) 
+
+# salva ou apenda proventos
+updateProventos <- function(.prov, .provFilename = .PROVENTOS_FILENAME){
+  
+  # verifica se o arquivo existe, se existir "apenda" se nao cria
+  if(file.exists(.provFilename)){
+    readRDS(.provFilename) %>% 
+      bind_rows(.prov) %>% 
+      distinct() %>% 
+      saveRDS(.provFilename) %>% 
+      return()
+  } else {
+    saveRDS(.prov, .provFilename)
+  }
+  
+  # retorna o proprio arquivo
+  return(.prov)
+  
+}
 
