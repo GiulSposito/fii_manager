@@ -1,15 +1,20 @@
 # importacoes
 source("./R/import/portfolioGoogleSheets.R") # carteira de fundos
-source("./R/import/pricesYahoo.R")           # cotacoes da carteira
+port  <- updatePortfolio()
 
 # import (update) portifolio e tickers price
-port  <- updatePortfolio()
+source("./R/import/pricesYahoo.R")           # cotacoes da carteira
 price <- updatePortfolioPrices(port)
 
 # importa proventos e corrige (splits e corrections)
 source("./R/import/proventos.R")
+proventos_page <- scrapProventos(port$ticker)
+# we think that we need to close the connections here to process the pages
+gc() 
+Sys.sleep(180)
+proventos      <- extractProvFromScrap(proventos_page)
+
 source("./R/import/fixProventos.R")
-proventos  <- importProventos(port$ticker)
-prov.fixed <- fixProventos(proventos)
-prov       <- updateProventos(prov.fixed)
+prov.fixed     <- fixProventos(proventos)
+prov           <- updateProventos(prov.fixed)
 

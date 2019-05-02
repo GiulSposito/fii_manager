@@ -14,7 +14,7 @@ library(rvest)
 .parseNumPtBr <- function(x) parse_number(x, locale=locale(grouping_mark=".", decimal_mark=","))
 
 .processProventos <- function(pg){ 
-  ## print(class(pg))
+  print(class(pg))
   
   # retorna uma lista vazia para as falhas
   if (is.null(pg)) return(list())
@@ -57,7 +57,7 @@ library(rvest)
 
 # faz o scrapping e tratamento dos proventos
 # tirados do site www.fiis.com.br
-importProventos <- function(.tickers, .url_base = "http://fiis.com.br/"){
+scrapProventos <- function(.tickers, .url_base = "http://fiis.com.br/"){
 
   # funcao para fazer o "fetch" da pagina
   # de maneira segura (sem falhar)
@@ -67,15 +67,20 @@ importProventos <- function(.tickers, .url_base = "http://fiis.com.br/"){
   # ira montar um tibble com os tickers para scrapear e tratar
   tibble( ticker = unique(.tickers) ) %>% 
     mutate( url = paste0(.url_base,ticker) ) %>% 
-    mutate( page = map(url, safe_read_html)) -> tickers_page
-  
-  tickers_page %>% 
-    filter( map(page, length)>0 ) %>% 
+    mutate( page = map(url, safe_read_html)) %>% 
+    return()
+}
+
+# transform the html in proventos dataframe
+extractProvFromScrap <- function(.tickers_page){
+  # from scrapped pages, extract the proventos data 
+  .tickers_page %>% 
+    filter( map(page, length)>0 ) %>%
     mutate( proventos = map(page, .processProventos) ) %>% 
-    filter( map(proventos, length)>0 ) %>% 
-    select( -url, -page ) %>% 
-    unnest( proventos ) %>% 
-    arrange( ticker, desc(data.pagamento) ) %>% 
+    filter( map(proventos, length)>0 ) %>%
+    select( -url, -page ) %>%
+    unnest( proventos ) %>%
+    arrange( ticker, desc(data.pagamento) ) %>%
     return()
 }
 
