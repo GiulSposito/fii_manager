@@ -14,9 +14,9 @@ tickers <- c("XPML11", "XPIN11", "RBRR11", "HGBS11", "RBRF11",
              "HFOF11", "HGRE11", "MXRF11", "XPCM11", "SDIL11")
 
 
-provs <- importProventos(tickers)
+prov <- importProventos(tickers)
 
-provs %>% 
+prov %>% 
   group_by(ticker) %>% 
   filter(data.pagamento>= now()-months(12)) %>% 
   filter(

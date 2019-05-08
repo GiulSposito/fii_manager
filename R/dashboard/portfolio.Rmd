@@ -1,0 +1,147 @@
+---
+title: "Portfolio"
+runtime: shiny
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(datasets)
+data(faithful)
+
+# my libs
+library(tidyverse)
+library(lubridate)
+library(ggrepel)
+library(plotly)
+
+# my data
+port  <- readRDS("../../data/portfolio.rds")
+price <- readRDS("../../data/price.rds")
+prov  <- readRDS("../../data/fii_proventos.rds")
+
+```
+
+Sharpe {data-navmenu="Proventos"}
+=======================================================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+```{r sidebarProvSharpe}
+sliderInput("provSharpeLastMonths", label = "Last N Months:",
+            min = 3, max = 12, value = 1, step = 1)
+```
+
+
+
+Column
+-----------------------------------------------------------------------
+
+### Proventos Sharpe Chart
+
+```{r provSharpeChart}
+
+renderPlotly({
+
+  lastMonths <- input$provSharpeLastMonths
+
+  prov %>% 
+    group_by(ticker) %>% 
+    filter(data.pagamento>= now()-months(lastMonths)) %>% 
+    summarise(
+      avg = mean(rendimento),
+      sd  = sd(rendimento),
+      count = n()
+    ) %>% 
+    arrange(desc(avg), sd) -> prov.summ
+  
+  prov.summ %>% 
+  mutate(ticker=as.factor(ticker)) %>% 
+  ggplot(aes(x=sd, y=avg)) +
+    geom_point(aes(color=ticker, size=count)) +
+    geom_text(aes(label=ticker)) +
+    #geom_label_repel(aes(label=ticker),size=3) +
+    theme_minimal() -> g
+  
+  ggplotly(g)
+})
+
+
+
+```
+
+
+
+
+
+
+Operacoes
+=======================================================================
+
+
+```{r capitalEvolution}
+
+# obtem os ultimos precos
+price %>% 
+  group_by(ticker) %>% 
+  filter(ref.date==max(ref.date)) %>% 
+  ungroup() %>% 
+  select(ticker, ref.date, price.close) -> last.prices
+
+# valor do portfolio atual
+port %>% 
+  inner_join(last.prices, by = "ticker") %>% 
+  mutate( price.open = (value+taxes)/volume ) %>% 
+  mutate( position.open = price.open * volume, 
+          position.close = price.close * volume ) %>% 
+  select( ticker, open.date = date, close.date=ref.date, volume, 
+          price.open, price.close, position.open, position.close) %>% 
+  mutate( rend.value = position.close - position.open,
+          rend.perc  = rend.value/position.open ) -> port.position
+
+port.position %>% 
+  ggplot(aes(open.date, rend.value)) +
+  geom_hline(aes(yintercept=0), linetype=2, color="red") +
+  geom_point(aes(color=ticker, size=position.close)) +
+  geom_label_repel(aes(label=ticker,color=ticker),size=2) +
+  theme_minimal()
+```
+
+
+
+Shiny Demo
+=======================================================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+Waiting time between eruptions and the duration of the eruption for the
+Old Faithful geyser in Yellowstone National Park, Wyoming, USA.
+
+```{r}
+selectInput("n_breaks", label = "Number of bins:",
+            choices = c(10, 20, 35, 50), selected = 20)
+
+sliderInput("bw_adjust", label = "Bandwidth adjustment:",
+            min = 0.2, max = 2, value = 1, step = 0.2)
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Geyser Eruption Duration
+
+```{r}
+renderPlot({
+  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
+       xlab = "Duration (minutes)", main = "Geyser Eruption Duration")
+  
+  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
+  lines(dens, col = "blue")
+})
+```

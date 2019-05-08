@@ -1,0 +1,46 @@
+---
+title: "FII Performance"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+
+# basic libs
+library(tidyverse)
+library(lubridate)
+library(ggrepel)
+library(plotly)
+
+# load data
+port  <- readRDS("../../data/portfolio.rds")
+price <- readRDS("../../data/price.rds")
+prov  <- readRDS("../../data/fii_proventos.rds")
+
+```
+
+# Posição
+
+## Capital
+
+```{r}
+
+# avalia capital investido contra capital atual
+capital.investido <- sum(port$value)
+
+# valor do portifolio
+price %>% 
+  group_by(ticker) %>% 
+  filter(ref.date==max(ref.date)) %>% 
+  ungroup() %>% 
+  right_join(port, by="ticker") %>% 
+  select( ticker, value, volume=volume.y, price.close, date, ref.date) %>% 
+  mutate(
+    months = round(interval(date, ref.date)/months(1)),
+    position = volume*price.close,
+    gain = position-value,
+    rent = gain/value
+  ) %>% 
+  pull(gain) %>% sum(na.rm = T)
+
+```
+

@@ -25,7 +25,7 @@ prov %>%
 library(plotly)
 ggplotly(g)
 
-selec.tickers <- c("VGIR11","HGRU11", "FIIB11","IRDM11", "KNRI11")
+selec.tickers <- c( "ABCP11", "KNRI11","CBOP11", "RBRF11", "VGIR11")
 
 prov %>% 
   filter( ticker %in% selec.tickers ) %>% 

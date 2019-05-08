@@ -13,12 +13,10 @@ library(rvest)
 # parse num with locale ptBR
 .parseNumPtBr <- function(x) parse_number(x, locale=locale(grouping_mark=".", decimal_mark=","))
 
-.processProventos <- function(pg){ 
-  print(class(pg))
+processProventos <- function(pg){ 
   
   # retorna uma lista vazia para as falhas
   if (is.null(pg)) return(list())
-  
   
   # isola updates de distribuicao
   pg %>%
@@ -31,25 +29,21 @@ library(rvest)
     str_detect("(Corrigiu|Correção|corrigiu|correção)") -> dist.correcao
   
   # processa valores da distribuicao
-  dist.rend %>% 
+  dist.rend %>%
     gsub("\\.","",.) %>%
     str_extract_all("(\\d\\d\\/\\d\\d\\/\\d+)|(R\\$ \\d+,\\d*)|(\\d+,\\d*)",T) %>%
-    as.tibble() %>% 
-    select(1:6) %>% 
+    as.tibble() %>%
+    select(1:6) %>%
     set_names(c("data.update", "valor","data.pagamento",
                 "data.base","cota.base","rendimento")) %>%
     mutate(
       data.update    = dmy(data.update),
       valor          = .parseRealValue(valor),
-      data.pagamento = dmy(data.pagamento), 
-      data.base      = dmy(data.base), 
+      data.pagamento = dmy(data.pagamento),
+      data.base      = dmy(data.base),
       cota.base      = .parseRealValue(cota.base),
-      rendimento     = .parseNumPtBr(rendimento)
-    ) -> rendimentos
-  
-  rendimentos %>% 
-    mutate(
-      correcao = dist.correcao
+      rendimento     = .parseNumPtBr(rendimento),
+      correcao       = dist.correcao
     ) %>%
     distinct() %>%
     return()
@@ -62,8 +56,7 @@ scrapProventos <- function(.tickers, .url_base = "http://fiis.com.br/"){
   # funcao para fazer o "fetch" da pagina
   # de maneira segura (sem falhar)
   safe_read_html <- possibly(read_html, otherwise = list())
-  safe_process   <- possibly(.processProventos, otherwise = list())
-  
+
   # ira montar um tibble com os tickers para scrapear e tratar
   tibble( ticker = unique(.tickers) ) %>% 
     mutate( url = paste0(.url_base,ticker) ) %>% 
@@ -76,7 +69,7 @@ extractProvFromScrap <- function(.tickers_page){
   # from scrapped pages, extract the proventos data 
   .tickers_page %>% 
     filter( map(page, length)>0 ) %>%
-    mutate( proventos = map(page, .processProventos) ) %>% 
+    mutate( proventos = map(page, processProventos) ) %>% 
     filter( map(proventos, length)>0 ) %>%
     select( -url, -page ) %>%
     unnest( proventos ) %>%
