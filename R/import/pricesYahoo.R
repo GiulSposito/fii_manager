@@ -23,16 +23,13 @@ getTickersPrice <- function(.tickers, .firstDate=NULL){
     return()
 }
 
-# update the prices of portifolio tickers
-updatePortfolioPrices <- function(.portfolio, 
-                                  .priceFilename=.PRICE_FILENAME){
-  
-  tickers <- .portfolio$ticker %>% unique() %>% paste0(".SA") %>% c("IFIX")
-  firstdate <- .portfolio$date %>% min()
-  
+# update the prices of tickers
+fetchTickersPrices <- function(.tickers, .firstDate=now-years(1), 
+                               .priceFilename=.PRICE_FILENAME){
+
   cotacoes <- BatchGetSymbols(
-    tickers = tickers,  
-    first.date = firstdate,
+    tickers = .tickers,  
+    first.date = .firstDate,
     thresh.bad.data = 0.001
   )
   
@@ -42,5 +39,19 @@ updatePortfolioPrices <- function(.portfolio,
     distinct() %T>% 
     saveRDS(.priceFilename) %>% 
     return()
+
+    
+}
+
+# update the prices of portifolio tickers
+updatePortfolioPrices <- function(.portfolio, 
+                                  .priceFilename=.PRICE_FILENAME){
+  
+  tickers <- .portfolio$ticker %>% unique() %>% paste0(".SA") %>% c("IFIX")
+  firstdate <- .portfolio$date %>% min()
+  
+  fetchTickersPrices(tickers, firstdate) %>% 
+    return()
+  
 }
 
