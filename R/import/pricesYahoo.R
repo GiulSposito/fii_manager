@@ -17,21 +17,24 @@ getTickersPrice <- function(.tickers, .firstDate=NULL){
       first.date = .firstDate,
       thresh.bad.data = 0.001
     ) %$%
-    as.tibble(df.tickers) %>% 
+    as_tibble(df.tickers) %>% 
     mutate(ticker = gsub(".SA","",ticker)) %>% 
     distinct() %>%
     return()
 }
 
 # update the prices of tickers
-fetchTickersPrices <- function(.tickers, .firstDate=now-years(1), 
+fetchTickersPrices <- function(.tickers, .firstDate=now()-years(1), 
                                .priceFilename=.PRICE_FILENAME){
-
-  cotacoes <- BatchGetSymbols(
-    tickers = .tickers,  
-    first.date = .firstDate,
-    thresh.bad.data = 0.001
-  )
+  
+  cotacoes <- .tickers %>%
+    paste0(".SA") %>%
+    c("IFIX") %>% 
+    BatchGetSymbols(
+      tickers = .,  #tickers
+      first.date = .firstDate,
+      thresh.bad.data = 0.001
+    )
   
   cotacoes$df.tickers %>%
     as.tibble() %>%
@@ -47,7 +50,7 @@ fetchTickersPrices <- function(.tickers, .firstDate=now-years(1),
 updatePortfolioPrices <- function(.portfolio, 
                                   .priceFilename=.PRICE_FILENAME){
   
-  tickers <- .portfolio$ticker %>% unique() %>% paste0(".SA") %>% c("IFIX")
+  tickers <- .portfolio$ticker %>% unique() 
   firstdate <- .portfolio$date %>% min()
   
   fetchTickersPrices(tickers, firstdate) %>% 
