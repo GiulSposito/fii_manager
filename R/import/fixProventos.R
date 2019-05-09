@@ -32,7 +32,7 @@ fixProventos <- function(.proventos){
     ) -> prov.corrigidos
   
   # tabela de proventos splitados com base na data de pagamento (precisa ver isso aí!)
-  splited.tickers <- c("HGBS11", "HGRE11", "HGLG11", "GRLV11", "CBOP11")
+  splited.tickers <- c("HGBS11", "HGRE11", "HGLG11", "GRLV11", "CBOP11", "HGJH11")
   splited.proventos <- tibble(
     ticker = splited.tickers,
     split.date   = rep(ymd(20180413),length(splited.tickers)),
