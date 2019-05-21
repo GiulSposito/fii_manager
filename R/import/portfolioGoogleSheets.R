@@ -17,7 +17,7 @@ updatePortfolio <- function(.file=.PORTFOLIO_FILENAME, .key="1k0u_xV21AUEBzfi_e8
   gs_auth()
   spreadsheet <- gs_key(.key) %>%
     gs_read(ws=1) %>%
-    as.tibble()
+    as_tibble()
   
   # format data types
   portfolio <- spreadsheet %>% 

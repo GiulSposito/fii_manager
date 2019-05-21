@@ -1,8 +1,16 @@
+library(plotly)
+library(tidyverse)
+
+port  <- readRDS("./data/portfolio.rds")
+
 # tickers to be prospected
-tickers <- c("PATC11", "HGJH11", "RBED11", "UBSR11")
-
-## >>> RBED11 <<<
-
+tickers <- c("HGBS11", "XPCM11", "HGLG11", "HGJH11", "PATC11","HGJH11", "RBED11",
+             "RBDS11", "KNRE11", "BRCR11", "UBSR11", "PORD11", "FAMB11B", "BBFI11B",
+             "VRTA11", "RBRD11", "BCRI11", "VGIR11", "SDIL11", "XPIN11", "XPML11", 
+             "VISC11", "FVBI11", port$ticker) %>% 
+  unique() %>% 
+  sort()
+  
 
 # importacoes dos rendimentos
 source("./R/import/proventos.R")
@@ -17,17 +25,20 @@ prov           <- updateProventos(prov.fixed)
 # 'sharpe' de rendimentos
 
 prov %>% 
-  filter( data.pagamento >= now()-months(24) ) %>% 
-  group_by(ticker) %>% 
+  mutate( in_port = ticker %in% unique(port$ticker)) %>% 
+  filter( ticker != "BRCR11" ) %>% 
+  filter( data.pagamento >= now()-months(6) ) %>% 
+  group_by(ticker, in_port) %>% 
   summarise(
     retorno = mean(rendimento),
     volat   = sd(rendimento)
   ) %>% 
-  ggplot(aes(group=ticker)) +
-  geom_point(aes(x=volat, y=retorno, color=ticker)) + 
+  ungroup() %>% 
+  ggplot() +
+  geom_point(aes(x=volat, y=retorno, color=ticker, shape=in_port)) + 
   theme_minimal() -> g
 
-library(plotly)
+
 ggplotly(g)
 
 # historico de rendimentos
