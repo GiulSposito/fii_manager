@@ -32,7 +32,11 @@ processProventos <- function(pg){
   dist.rend %>%
     gsub("\\.","",.) %>%
     str_extract_all("(\\d\\d\\/\\d\\d\\/\\d+)|(R\\$ \\d+,\\d*)|(\\d+,\\d*)",T) %>%
-    as.tibble() %>%
+    as_tibble() -> parsed
+  
+  if(nrow(parsed)==0| ncol(parsed)<6) return(list())
+  
+  parsed %>% 
     select(1:6) %>%
     set_names(c("data.update", "valor","data.pagamento",
                 "data.base","cota.base","rendimento")) %>%
