@@ -1,0 +1,102 @@
+# draft script
+library(tidyverse)
+library(jsonlite)
+library(httr)
+library(glue)
+library(lubridate)
+
+getFIIinfo <- function(.ticker, .startDate=now()-years(1), .endDate=now()){
+
+  .prefix <- str_sub(.ticker, 1,4)
+  
+  getAPIToken <- .  %>% 
+    headers() %>% 
+    keep(~str_detect(.x,pattern = "XSRF-TOKEN")) %>% 
+    .[[1]] %>% 
+    str_extract("(.*?;)") %>% 
+    str_replace(";","") %>% 
+    str_replace("XSRF-TOKEN=","") %>% 
+    URLdecode()
+  
+  # 
+  # url_base <- "https://fiis.com.br/hgpo11"
+  # resp_base <- httr::GET(url_base, verbose())
+  # 
+  
+  # chamada para cotacao
+  # é um GET
+  url_cotacao <- glue("https://fiis.com.br/{.prefix}/cotacoes/?periodo=max")
+  resp_cotacao <- httr::GET(url_cotacao, verbose())
+  if (resp_cotacao$status_code!=200)
+    stop(glue("Erro na chamada GET COTACAO ({httperror})"), httperror=resp_cotacao$status_code)
+  
+  # tratamento do retorno da cotacao
+  cotacao <- resp_cotacao %>% 
+    content(as="text") %>% 
+    fromJSON(simplifyDataFrame = T) %>% 
+    .[[1]] %>% 
+    as_tibble() %>% 
+    set_names(c("price.close", "date.ref")) %>% 
+    mutate( ticker = .ticker,
+            price.close = as.numeric(price.close),
+            date.ref = date(ymd_hms((date.ref))) ) %>% 
+    select( ticker, date.ref, price.close )
+  
+  # extraindo tockens (tá no 'set-cookie: XSRF-TOKEN'?)
+  url_updates <- glue("https://fiis.com.br/atualizacoes/?fii={.ticker}")
+  resp_updates <- httr::GET(url_updates, verbose())
+  if (resp_updates$status_code!=200)
+    stop(glue("Erro na chamada GET ATUALIZACOES ({httperror})"), httperror=resp_updates$status_code)
+  
+  api_headers <- add_headers(
+    "X-Requested-With"="XMLHttpRequest",
+    "Content-Type"="application/json;charset=utf-8",
+    "X-XSRF-TOKEN"=  getAPIToken(resp_updates)
+  )
+  url_itens <-  "https://fiis.com.br/atualizacoes/get-items/"
+  params_itens <- paste0("{\"type\":\"fund\",\"funds\":[\"",toupper(.prefix),"\"],\"startDate\":\"",format(.startDate, "%Y-%m-%d"),"\",\"endDate\":\"",format(.endDate, "%Y-%m-%d"),"\",\"content\":[]}")
+  resp_items <- httr::POST(url_itens, body=params_itens, verbose(), api_headers)
+
+  
+  # chamada para atualizacoes
+  # é um post
+  # precisa dos tokens
+  url_updates <- "https://fiis.com.br/atualizacoes/get-data-by-fund/"
+  api_params <- paste0("{\"fund\":\"",toupper(.prefix),"\",\"startDate\":\"",format(.startDate, "%Y-%m-%d"),"\",\"endDate\":\"",format(.endDate, "%Y-%m-%d"),"\",\"content\":[]}")
+  api_headers <- add_headers(
+    "X-Requested-With"="XMLHttpRequest",
+    "Content-Type"="application/json;charset=utf-8",
+    "X-XSRF-TOKEN"=  getAPIToken(resp_items)
+  )
+  
+  # chamada para os updates
+  resp_updates <- httr::POST(
+    url = url_updates, 
+    body = api_params, 
+    encode = "json", 
+    api_headers, 
+    verbose()
+  )
+  
+  if (resp_updates$status_code!=200)
+    stop(glue("Erro na chamada POST GET-DATA-BY-FUND ({httperror})"), httperror=resp_updates$status_code)
+  
+  atualizacoes <- resp_updates %>% 
+    content(as="text") %>% 
+    fromJSON(simplifyDataFrame = T) %>% 
+    as_tibble() %>% 
+    set_names(c("date.time","title","link","content")) %>% 
+    mutate( date.time = ymd_hms(date.time))
+  
+  
+  return(
+    list(
+      ticker = toupper(.ticker),
+      price = cotacao,
+      updates = atualizacoes
+    )
+  )
+}
+
+x <- getFIIinfo("ONEF11")
+x$price %>% ggplot(aes(x=date.ref, y=price.close)) + geom_line()
