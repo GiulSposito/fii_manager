@@ -14,9 +14,11 @@ library(lubridate)
   filter(is.about.rend) %>% 
   mutate(
     numbers = map(content, function(.x){
-      str_extract_all(.x,"(\\d\\d\\/\\d\\d\\/\\d+)|(R\\$ \\d+,\\d*)|(\\d+,\\d*)",T) %>%  
+      toupper(.x) %>% 
+        str_extract_all("(\\d\\d\\/\\d\\d\\/\\d+)|(R\\$ \\d+,\\d*)|(R\\$ \\d+)|(\\d+,\\d*)",T) %>% 
         paste(collapse = "|") %>% 
-        str_replace_all(",",".") 
+        str_replace_all(",",".") %>% 
+        str_remove_all("R\\$ *")
     })
   ) %>% 
   separate(
@@ -30,18 +32,23 @@ library(lubridate)
     data.pagamento = dmy(data.pagamento),
     data.base = dmy(data.base)
   ) %>% 
-  select(date.time, correcao=is.rend.fix, valor, data.pagamento, data.base, cota.base, rendimento, content)
+  select(date.time, correcao=is.rend.fix, valor, data.pagamento, data.base, cota.base, rendimento, content) %>% 
+  filter(complete.cases(.)) %>% 
+  mutate( valor=as.numeric(valor) )
 
 
 getFIIinfo <- function(.ticker, .startDate=now()-years(1), .endDate=now(), .verbose=F){
+  
+  print(glue("Getting {.ticker} since {.startDate}"))
 
   .prefix <- str_sub(.ticker, 1,4)
   
-  if(.verbose)
+  if(.verbose) {
     verb <- verbose()
-  else 
+  } else {
     verb <- NULL
-  
+  } 
+    
   getAPIToken <- .  %>% 
     headers() %>% 
     keep(~str_detect(.x,pattern = "XSRF-TOKEN")) %>% 
