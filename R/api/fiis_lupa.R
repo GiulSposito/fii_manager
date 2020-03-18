@@ -59,3 +59,6 @@ result <- list(data=fii.data, dict=fii.coldict)
 
 result$dict
 result$data
+
+write_csv(result$data, "./export/fii_index.csv")
+write_csv(result$dict, "./export/col_dict.csv")
