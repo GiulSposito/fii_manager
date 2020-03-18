@@ -55,4 +55,7 @@ fii.data <- fii.data %>%
 
 fii.coldict$type <- sapply(fii.data, class) 
 
+result <- list(data=fii.data, dict=fii.coldict)
 
+result$dict
+result$data
