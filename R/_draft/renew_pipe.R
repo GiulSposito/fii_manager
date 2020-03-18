@@ -3,24 +3,25 @@ source("./R/import/portfolioGoogleSheets.R")
 
 port <- updatePortfolio()
 
-my_tickers <- port %>% 
-  select(ticker) %>% 
-  distinct()
-
 safe_getFIIInfo <- safely(.f = getFIIinfo, otherwise = list(), quiet = F)
 
-fiis_site <- my_tickers %>% 
+fiis_site <- port %>% 
+  select(ticker) %>% 
+  distinct() %>% 
+  arrange(ticker) %>% 
   mutate(info = map(ticker, safe_getFIIInfo))
 
 fii_info <- fiis_site %>% 
-  mutate(return_ok=map_lgl(info, function(.x) is.null(.x$error)))
+  mutate(return_ok=map_lgl(info, function(.x) is.null(.x$error))) %>% 
   filter(return_ok) %>% 
   mutate(
     price     = map(info, ~.x$result$price),    
     proventos = map(info, ~.x$result$proventos),    
-    updates   = map(info, ~.x$result$updagtes)    
+    updates   = map(info, ~.x$result$updates)    
   ) %>%
   select(ticker, price, proventos, updates)
+  
+saveRDS(fii_info, "./R/fii_info.rds")
 
 last_prices <- fii_info %>% 
   select(ticker, price) %>% 
@@ -33,6 +34,7 @@ last_prices <- fii_info %>%
 last_prov <- fii_info %>% 
   select(ticker, proventos) %>% 
   unnest(proventos) %>% 
+  filter(data.base < ymd("2020-03-01")) %>% 
   group_by(ticker) %>% 
   top_n(3,data.base) %>% 
   summarise(
@@ -55,4 +57,26 @@ capital <- port %>%
 
 fii_indicados %>% 
   inner_join(capital, by="ticker") %>% 
-  arrange(desc(novo.rend))
+  arrange(desc(novo.rend)) %>% 
+  filter(novo.rend >= 0.7 ) 
+
+
+fii_indicados %>% 
+  inner_join(capital, by="ticker") %>% 
+  arrange(desc(novo.rend)) %>% 
+  filter(novo.rend >= 0.7 ) %>% 
+  select(ticker, capital) %>% 
+  inner_join(select(fii_info, ticker, proventos)) %>% 
+  unnest() %>% 
+  group_by(ticker) %>% 
+  summarise(
+    rend.avg = mean(rendimento), 
+    rend.sd  = sd(rendimento),
+    capital = mean(capital)
+  ) %>% 
+  ggplot(aes(x=rend.sd, y=rend.avg, color=ticker, label=ticker)) +
+  geom_point(aes(size=capital)) +
+  ggrepel::geom_text_repel() +
+  theme_minimal()
+
+
