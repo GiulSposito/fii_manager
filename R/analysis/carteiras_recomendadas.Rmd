@@ -1,0 +1,74 @@
+---
+title: "Análise de Carterias Recomendadas"
+output: html_notebook
+---
+
+Este notebook vai carregar as carteiras recomendadas para abril, olhas as indicações de FII mais comuns, puxar as informações do www.fiis.com.br para essas indicações e calcular o provento médio pelo valo de mercado e a relação do valor de mercado com valor patrimonial.
+
+```{r setup, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(lubridate)
+```
+
+
+# Análise de Carteiras Recomendadas
+
+## Carregando Carteiras
+
+```{r}
+
+# carteira de empiricus
+port_emp <- readRDS("../../data/carteira_recomendada_empiricus.rds")
+port_emp$carteira <- "empiricus"
+port_emp <- port_emp %>% distinct()
+glimpse(port_emp)
+
+# carteira do itau
+port_itau <- readRDS("../../data/carteira_recomendada_itau.rds")
+glimpse(port_itau)
+
+# carteira empiricus
+port_xpi <- readRDS("../../data/carteira_recomendada_xp.rds")
+glimpse(port_xpi)
+```
+
+## Unindo os portifolios
+
+```{r}
+
+port_rec <- port_emp %>% 
+  select(ticker, mes, carteira) %>% 
+  bind_rows(port_itau, port_xpi) %>% 
+  distinct()
+
+```
+
+## Tickers mais recomendados
+
+```{r}
+
+tickers_rec <- port_rec %>% 
+  count(ticker, sort=T)
+
+tickers_rec
+
+```
+
+## buscar as informações sobre os tickers mais recomendados
+
+```{r warning=FALSE, message=FALSE, cache=TRUE}
+
+fii_lupa <- readRDS("../../data/fii_lupa_20200421.rds")
+
+fii <- fii_lupa$data %>% 
+  rename(ticker=codneg)
+
+
+tickers_rec %>% 
+  filter(n>=2) %>% 
+  inner_join(fii, by="ticker") %>% 
+  View()
+  
+
+```
+

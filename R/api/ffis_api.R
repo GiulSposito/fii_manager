@@ -5,39 +5,9 @@ library(httr)
 library(glue)
 library(lubridate)
 
-.convertProventos <- . %>% 
-  mutate(
-    content = tolower(content),
-    is.about.rend = str_detect(content,".*distribuição.*rendimento.*"),
-    is.rend.fix   = str_detect(content,"(corrigiu|correção)")
-  ) %>% 
-  filter(is.about.rend) %>% 
-  mutate(
-    numbers = map(content, function(.x){
-      toupper(.x) %>% 
-        str_extract_all("(\\d\\d\\/\\d\\d\\/\\d+)|(R\\$ \\d+,\\d*)|(R\\$ \\d+)|(\\d+,\\d*)",T) %>% 
-        paste(collapse = "|") %>% 
-        str_replace_all(",",".") %>% 
-        str_remove_all("R\\$ *")
-    })
-  ) %>% 
-  separate(
-    col   = numbers, 
-    into  = c("valor","data.pagamento","data.base","cota.base","rendimento"), 
-    sep   = "\\|",
-    convert = T,
-    extra = "drop"
-  ) %>%
-  mutate(
-    data.pagamento = dmy(data.pagamento),
-    data.base = dmy(data.base)
-  ) %>% 
-  select(date.time, correcao=is.rend.fix, valor, data.pagamento, data.base, cota.base, rendimento, content) %>% 
-  filter(complete.cases(.)) %>% 
-  mutate( valor=as.numeric(valor) )
 
-
-getFIIinfo <- function(.ticker, .startDate=now()-years(1), .endDate=now(), .verbose=F){
+getFIIinfo <- function(.ticker, .startDate=now()-years(1),
+                       .endDate=now(), .verbose=F){
   
   print(glue("Getting {.ticker} since {.startDate}"))
 
@@ -130,11 +100,11 @@ getFIIinfo <- function(.ticker, .startDate=now()-years(1), .endDate=now(), .verb
   
   
   return(
-    list(
+    tibble(
       ticker = toupper(.ticker),
-      price = cotacao,
-      proventos = .convertProventos(atualizacoes),
-      updates = atualizacoes
+      price = list(cotacao),
+      # proventos = list(.convertProventos(atualizacoes)),
+      updates = list(atualizacoes)
     )
   )
 }

@@ -57,8 +57,10 @@ fii.coldict$type <- sapply(fii.data, class)
 
 result <- list(data=fii.data, dict=fii.coldict)
 
-result$dict
-result$data
-
-write_csv(result$data, "./export/fii_index.csv")
-write_csv(result$dict, "./export/col_dict.csv")
+saveRDS(result, "./data/fii_lupa_20200421.rds")
+ 
+# result$dict
+# # result$data
+# # 
+# # write_csv(result$data, "./export/fii_index.csv")
+# # write_csv(result$dict, "./export/col_dict.csv")

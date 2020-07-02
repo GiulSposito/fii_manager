@@ -5,8 +5,14 @@ port <- updatePortfolio()
 
 safe_getFIIInfo <- safely(.f = getFIIinfo, otherwise = list(), quiet = F)
 
+fiis_sugestions <- tibble(
+  ticker = c("HGPO11","XPLG11", "XPPR11","BTLG11","BCRI11","RBRP11","KNIP11","XPIN11",
+             "VTLT11","RBBV11","BRCR11","HGPO11")
+)
+
 fiis_site <- port %>% 
   select(ticker) %>% 
+  bind_rows(fiis_sugestions) %>% 
   distinct() %>% 
   arrange(ticker) %>% 
   mutate(info = map(ticker, safe_getFIIInfo))
@@ -21,12 +27,12 @@ fii_info <- fiis_site %>%
   ) %>%
   select(ticker, price, proventos, updates)
   
-saveRDS(fii_info, "./R/fii_info.rds")
+saveRDS(fii_info, "./data/fii_info.rds")
 
 last_prices <- fii_info %>% 
-  select(ticker, price) %>% 
+  select(price) %>% 
   unnest(price) %>% 
-  select(-ticker1) %>% 
+  #select(-ticker1) %>% 
   group_by(ticker) %>% 
   filter( date.ref == max(date.ref)) %>% 
   ungroup()

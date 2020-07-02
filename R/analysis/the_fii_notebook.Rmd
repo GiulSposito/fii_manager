@@ -1,0 +1,152 @@
+---
+title: "The FII Notebook"
+output: html_document
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(kableExtra)
+library(lubridate)
+library(ggrepel)
+library(DT)
+
+# put rnotbook in the same workdir
+knitr::opts_knit$set(root.dir = normalizePath(rprojroot::find_rstudio_root_file())) 
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+# Datasets
+
+## Carteira de Investimento
+
+```{r portifolio, warning=FALSE, cache=TRUE}
+source("./R/import/portfolioGoogleSheets.R")
+port <- updatePortfolio()
+
+datatable(port)
+```
+
+## Lupa
+
+```{r lupa, warning=FALSE, cache=TRUE}
+source("./R/api/import_lupa.R")
+fii_info <- importLupa()
+
+datatable(fii_info$data)
+```
+
+## Cotacao
+
+```{r cotacoes, warning=FALSE, cache=TRUE}
+# source("./R/api/ffis_api.R")
+
+# tickers do portifolio
+tickers <- port$ticker %>% unique() %>% .[order(.)]
+last24M <- floor_date(now() - years(2), unit="month")
+
+# puxa a info
+fiis <- tickers %>% 
+  map(getFIIinfo, .startDate=last24M)
+
+```
+
+# Analises
+
+## Posicao de Face (valor de compra x valor de mercado)
+
+```{r}
+# acha o ultimo preco
+last_prices <- fiis %>% 
+  map_df(~.x$price) %>% # extrai e concatena as tabelas de cotação
+  group_by(ticker) %>% 
+  filter(date.ref==max(date.ref)) %>% 
+  ungroup()
+
+ganho_capital <- port %>% 
+  inner_join(last_prices, by="ticker") %>% 
+  select(date, ticker, volume, price, taxes, date.ref, price.close) %>% 
+  mutate(pos_inicial = volume*price+taxes,
+         pos_final   = volume*price.close,
+         ganho.abs   = pos_final-pos_inicial,
+         ganho.pct   = 100*ganho.abs/pos_inicial,
+         meses       = interval(date, date.ref)%/%months(1) ) %>% 
+  arrange(desc(ganho.pct))
+
+ganho_capital %>% 
+  mutate( operacao = paste0(ticker, "(", meses, ")" ),
+          operacao = fct_reorder(operacao, ganho.pct)) %>% 
+  ggplot(aes(operacao, ganho.pct)) +
+  geom_col(aes(fill=ganho.pct>0)) +
+  coord_flip() +
+  theme_light()
+
+
+```
+
+
+## Absolute Dividend Yield 12M
+
+## Relative Dividend Yield 12M/Current Price
+
+```{r}
+
+# proventos
+prov <- fiis %>% 
+  keep(~.x$ticker!="TBOF11") %>% 
+  map_df(function(.x){
+    tibble(ticker=.x$ticker,
+           data  = list(.x$proventos))
+  }) %>% unnest(data)
+
+# ultimo precos
+last_prices <- fiis %>% 
+  keep(~.x$ticker!="TBOF11") %>% 
+  map_df(~.x$price) %>% 
+  group_by(ticker) %>% 
+  filter(date.ref==max(date.ref))
+
+info <- fii_info$data %>% 
+  select(ticker=codneg, tipo, ppc, cvp, patrimonio) #ppc patri/cota -> valor patrionial da cota
+                                                    #cvp cota/VP -> agil/desagil
+
+
+prov %>% 
+  group_by(ticker) %>% 
+  filter(data.base>=ymd(20200101)) %>% 
+  summarise(
+    rend.medio = mean(rendimento),
+    rend.sd    = sd(rendimento)
+  ) %>% 
+  ungroup() %>% 
+  inner_join(info, by="ticker") %>% 
+  filter(cvp <= 1,
+         !str_detect(tipo, "Escrit")) %>% 
+  ggplot(aes(rend.sd, rend.medio, shape=tipo)) +
+  geom_point(aes(color=cvp)) +
+  geom_text_repel(aes(label=ticker, color=cvp))  +
+  scale_color_gradient2(low = "green", mid="grey", high="red", midpoint = 1) +
+  theme_light()
+  
+```
+
+```{r}
+fii_info$data %>% 
+  filter( urenddatabase >= ymd(20200101),
+          cvp <=1,
+          rendmed12percent <= 1.5,
+          urendpercent <= 1.2,
+          urendpercent >=  0.5) %>% 
+  ggplot(aes(rendmed12percent, urendpercent, shape=tipo)) +
+  geom_point(aes(color=cvp)) +
+  geom_text_repel(aes(label=codneg, color=cvp))  +
+  scale_color_gradient2(low = "green", mid="grey", high="red", midpoint = 1) +
+  theme_light()
+
+```
+
+
+### Force Plot
+
+### Radar
+
+## Relative Dividend Yield 12M at Buy Price
