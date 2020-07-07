@@ -19,7 +19,7 @@ fixProventos <- function(.proventos){
   proventos %>% 
     anti_join(correcoes, by=c("ticker","mes.pagamento")) %>% 
     bind_rows(correcoes) %>% 
-    arrange(ticker, desc(data.update)) %>% 
+    arrange(ticker, desc(date.time)) %>% 
     select(-mes.pagamento, -correcao) -> prov.corrigidos
   
   # corrige um provento com data de 2108 (VISC11)
