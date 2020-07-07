@@ -15,39 +15,56 @@ sel_tickers <- read_table("./import/tickers_recomendados.txt", col_names = F) %>
   arrange(ticker) %>% 
   filter(ticker!="TBOF11") # removido
 
-# Radar (prov 2020 x sd 2020)
+# pega os proventos
+source("./R/import/fixProventos.R")
 prov <- fii_info %>% 
   inner_join(sel_tickers, by="ticker") %>% 
   select(ticker, proventos) %>% 
-  unnest(proventos)
+  unnest(proventos) %>%
+  fixProventos()
 
 
-# check de meses por ticker
-prov %>% 
-  filter(data.base >= ymd(20200101)) %>% 
-  mutate(mes.pagamento = floor_date(data.base, "months")) %>% 
-  count(ticker, sort = T) %>% 
-  View()
+# Parametros de consulta
+MONTHS <- 6
+LAST_MONTH <- floor_date(today()-months(1),"months")
+FIRST_MONTH <- LAST_MONTH-months(MONTHS-1)
 
-crossp <- c("XPML11","HTMX11","BCFF11") %>% 
-  expand.grid(seq(from=ymd(20200101), to=ymd(20200601), by="months")) %>% 
+# expand um cross product Ticker x Mes para garantir
+# que apareçam no dataframe, meses que não 
+crossp <- unique(prov$ticker) %>% 
+  expand.grid(seq(from=FIRST_MONTH, to=LAST_MONTH, by="months")) %>% 
   as_tibble() %>% 
-  set_names(c("ticker","mes.pagamento"))
+  set_names(c("ticker","mes.base"))
 
 prov %>%
-  filter(data.base >= ymd(20200101)) %>% 
+  mutate(mes.base = floor_date(data.base, "months")) %>% 
+  filter(mes.base >= FIRST_MONTH, mes.base <= LAST_MONTH ) %>% 
+  select(ticker, mes.base, valor, cota.base, rendimento) %>% 
+  right_join(crossp, by = c("ticker", "mes.base")) %>% 
   filter(ticker %in% c("XPML11","HTMX11","BCFF11")) %>% 
-  mutate(mes.pagamento = floor_date(data.base, "months")) %>% 
-  select(ticker, mes.pagamento, valor, cota.base, rendimento) %>% 
-  right_join(crossp, by = c("ticker", "mes.pagamento")) %>% 
-  arrange(ticker, mes.pagamento) %>% 
-  mutate( valor      = if_else(is.na(valor),0,valor),
-          rendimento = if_else(is.na(rendimento),0,rendimento) ) %>% 
+  arrange(ticker, mes.base) %>% 
+  mutate( valor      = if_else(is.na(valor),0.0,valor),
+          rendimento = if_else(is.na(rendimento),0.0,rendimento) ) %>% 
   group_by(ticker) %>% 
-  mutate( rend.md = mean(rendimento) ) %>% 
-  group
+  summarise( 
+    rend.md = mean(rendimento),
+    rend.sd = sd(rendimento) ) 
   
+prov %>% 
+  mutate(mes.base = floor_date(data.base, "months")) %>% 
+  filter(mes.base >= FIRST_MONTH, mes.base <= LAST_MONTH ) %>% 
+  filter(ticker %in% c("XPML11","HTMX11","BCFF11")) %>% 
+  group_by(ticker) %>% 
+  summarise(
+    rend.md = sum(rendimento)/MONTHS,
+    rend.sd = sd(rendimento)
+  ) %>% 
+  mutate( rend.md = rend.md )
 
+sd(c(0.358,0.427))
+sd(c(0.427,0.358,0,0,0))
+
+sd(c(0.513,0.563,0.538,0.506,0.466))
 
 # fii_info %>% 
 #   mutate(check = map_chr(proventos,function(.x){
