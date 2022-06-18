@@ -28,6 +28,8 @@ getFIIinfo <- function(.ticker, .startDate=now()-years(1),
     str_replace("XSRF-TOKEN=","") %>% 
     URLdecode()
   
+  set_user_agent <- add_headers("user-agent"="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36")
+  
   # 
   # url_base <- "https://fiis.com.br/hgpo11"
   # resp_base <- httr::GET(url_base, verbose())
@@ -36,7 +38,7 @@ getFIIinfo <- function(.ticker, .startDate=now()-years(1),
   # chamada para cotacao
   # é um GET
   url_cotacao <- glue("https://fiis.com.br/{.prefix}/cotacoes/?periodo=max")
-  resp_cotacao <- httr::GET(url_cotacao, verb)
+  resp_cotacao <- httr::GET(url_cotacao, verb, set_user_agent)
   if (resp_cotacao$status_code!=200)
     stop(glue("Erro na chamada GET COTACAO ({httperror})"), httperror=resp_cotacao$status_code)
   
@@ -54,14 +56,16 @@ getFIIinfo <- function(.ticker, .startDate=now()-years(1),
   
   # extraindo tockens (tá no 'set-cookie: XSRF-TOKEN'?)
   url_updates <- glue("https://fiis.com.br/atualizacoes/?fii={.ticker}")
-  resp_updates <- httr::GET(url_updates, verb)
+  resp_updates <- httr::GET(url_updates, verb, set_user_agent)
   if (resp_updates$status_code!=200)
     stop(glue("Erro na chamada GET ATUALIZACOES ({httperror})"), httperror=resp_updates$status_code)
   
   api_headers <- add_headers(
     "X-Requested-With"="XMLHttpRequest",
     "Content-Type"="application/json;charset=utf-8",
-    "X-XSRF-TOKEN"=  getAPIToken(resp_updates)
+    "X-XSRF-TOKEN"=  getAPIToken(resp_updates),
+    "user-agent"="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
+    
   )
   url_itens <-  "https://fiis.com.br/atualizacoes/get-items/"
   params_itens <- paste0("{\"type\":\"fund\",\"funds\":[\"",toupper(.prefix),"\"],\"startDate\":\"",format(.startDate, "%Y-%m-%d"),"\",\"endDate\":\"",format(.endDate, "%Y-%m-%d"),"\",\"content\":[]}")
@@ -76,7 +80,8 @@ getFIIinfo <- function(.ticker, .startDate=now()-years(1),
   api_headers <- add_headers(
     "X-Requested-With"="XMLHttpRequest",
     "Content-Type"="application/json;charset=utf-8",
-    "X-XSRF-TOKEN"=  getAPIToken(resp_items)
+    "X-XSRF-TOKEN"=  getAPIToken(resp_items),
+    "user-agent"="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
   )
   
   # chamada para os updates
