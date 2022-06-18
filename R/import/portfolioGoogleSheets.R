@@ -1,5 +1,5 @@
 library(tidyverse)
-library(googlesheets)
+library(googlesheets4)
 library(lubridate)
 
 .PORTFOLIO_FILENAME = "./data/portfolio.rds"
@@ -14,10 +14,8 @@ library(lubridate)
 updatePortfolio <- function(.file=.PORTFOLIO_FILENAME, .key="1k0u_xV21AUEBzfi_e8rZtiAgEJD2OGsQu0QW-IJ_kCU"){
   
   # import data
-  gs_auth()
-  spreadsheet <- gs_key(.key) %>%
-    gs_read(ws=1) %>%
-    as_tibble()
+  # gs4_auth()
+  spreadsheet <- read_sheet(.key)
   
   # format data types
   portfolio <- spreadsheet %>% 
