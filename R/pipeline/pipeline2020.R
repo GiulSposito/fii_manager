@@ -16,9 +16,11 @@ port <- updatePortfolio()
 
 # importa dados "cadastrais" dos FIIs
 fii_lupa <- importLupa()
+fii_list <- importFIIList()
 
 # pega os tickers para importar dados de cotação
-sel_tickers <- fii_lupa$data$codneg
+# sel_tickers <- fii_lupa$data$codneg
+sel_tickers <- fii_list
 
 # protege o scrapping de erros
 safeGetFIIinfo <- safely(getFIIinfo)
