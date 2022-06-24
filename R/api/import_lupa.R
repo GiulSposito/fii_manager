@@ -4,6 +4,7 @@ library(jsonlite)
 library(httr)
 library(glue)
 library(lubridate)
+library(rvest)
 
 importLupa <- function(){
   getAPIToken <- .  %>% 
@@ -15,8 +16,10 @@ importLupa <- function(){
     str_replace("XSRF-TOKEN=","") %>% 
     URLdecode()
   
+  set_user_agent <- add_headers("user-agent"="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36")
+
   base.url <- "https://fiis.com.br/lupa-de-fiis/"
-  base.resp <- httr::GET(base.url)
+  base.resp <- httr::GET(base.url, set_user_agent)
   base.resp$status_code
   
   data.url <- "https://fiis.com.br/lupa-de-fiis/data/"
@@ -24,6 +27,7 @@ importLupa <- function(){
   api_headers <- add_headers(
     "X-Requested-With"="XMLHttpRequest",
     "Content-Type"="application/json;charset=utf-8",
+    "user-agent"="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36",
     "X-XSRF-TOKEN"=  getAPIToken(base.resp)
   )
   
@@ -53,8 +57,15 @@ importLupa <- function(){
               parse_number, locale=locale(decimal_mark = ",", grouping_mark = ".")) %>% 
     mutate_at(vars(ncotistas,nnegmed), as.integer)
   
-  fii.coldict$type <- sapply(fii.data, class) 
+  fii.coldict$type <- sapply(fii.data, class)[1:nrow(fii.coldict)] 
   
   list(data=fii.data, dict=fii.coldict) %>% 
+    return()
+}
+
+importFIIList <- function(){
+  read_html("https://fiis.com.br/lista-de-fundos-imobiliarios/") %>% 
+    html_elements("span.ticker") %>% 
+    html_text() %>% 
     return()
 }
