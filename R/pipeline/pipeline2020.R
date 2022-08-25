@@ -1,7 +1,8 @@
 source("./R/import/portfolioGoogleSheets.R")
 source("./R/api/ffis_api.R")
 source("./R/api/import_lupa.R")
-library(ggrepel)
+# library(ggrepel)
+
 
 # pega o portfolio do google drive
 port <- updatePortfolio()
