@@ -21,14 +21,14 @@ updatePortfolio <- function(.file=.PORTFOLIO_FILENAME, .key="1k0u_xV21AUEBzfi_e8
   portfolio <- spreadsheet %>% 
     select(Data, Ativo, Qtd, Valor, Taxas, Total, Carteira) %>%
     setNames(c("date","ticker","volume","price","taxes", "value", "portfolio")) %>%
-    filter(complete.cases(.)) %>%
-    mutate(
-      price = .parseRealValue(price),
-      taxes   = .parseRealValue(taxes),
-      value   = .parseRealValue(value),
-      portfolio = as.factor(portfolio),
-      date    = ymd(date)
-    )
+    filter(complete.cases(.))
+    # mutate(
+    #   price = .parseRealValue(price),
+    #   taxes   = .parseRealValue(taxes),
+    #   value   = .parseRealValue(value),
+    #   portfolio = as.factor(portfolio),
+    #   date    = ymd(date)
+    # )
   
   # save it locally
   portfolio %T>% 
