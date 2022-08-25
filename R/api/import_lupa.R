@@ -67,5 +67,6 @@ importFIIList <- function(){
   read_html("https://fiis.com.br/lista-de-fundos-imobiliarios/") %>% 
     html_elements("span.ticker") %>% 
     html_text() %>% 
+    str_trim() %>% 
     return()
 }
