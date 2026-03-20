@@ -10,7 +10,7 @@ library(glue)
 source("R/utils/persistence.R")
 source("R/collectors/collector_base.R")
 
-#' Create Portfolio Collector
+#' Create Portfolio Google Sheets Collector
 #'
 #' Creates a collector for portfolio positions from Google Sheets.
 #' Wraps the existing portfolioGoogleSheets.R import logic with
@@ -20,23 +20,23 @@ source("R/collectors/collector_base.R")
 #' @param logger Logger instance
 #' @return Collector instance
 #' @export
-create_portfolio_collector <- function(config, logger) {
+create_portfolio_googlesheets_collector <- function(config, logger) {
 
   # Função interna de coleta
   collect_fn <- function(config, logger) {
     tryCatch({
-      # Configuração do collector
-      portfolio_config <- config$data$portfolio
-      if (is.null(portfolio_config)) {
-        stop("Missing config$data$portfolio")
-      }
-
-      sheet_key <- portfolio_config$google_sheet_key
+      # Get sheet_key from config
+      # Config can come from data_sources.portfolio_googlesheets
+      sheet_key <- config$sheet_key
       if (is.null(sheet_key)) {
-        stop("Missing google_sheet_key in config")
+        stop("Missing sheet_key in config")
       }
 
-      filepath <- config$data$portfolio_file %||% "./data/portfolio.rds"
+      # Output filepath
+      filepath <- config$output %||% "portfolio.rds"
+      if (!startsWith(filepath, "/") && !startsWith(filepath, ".")) {
+        filepath <- file.path("data", filepath)
+      }
 
       logger$info(glue("Reading portfolio from Google Sheets (key: {sheet_key})"))
 
@@ -73,7 +73,7 @@ create_portfolio_collector <- function(config, logger) {
       save_rds_with_backup(
         data = portfolio,
         filepath = filepath,
-        backup_dir = config$data$backup_dir %||% "data_backup",
+        backup_dir = "data_backup",
         logger = logger
       )
 

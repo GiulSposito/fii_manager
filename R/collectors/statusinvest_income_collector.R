@@ -28,23 +28,17 @@ create_statusinvest_income_collector <- function(config, logger) {
   # Função interna de coleta
   collect_fn <- function(config, logger) {
     tryCatch({
-      # Configuração do collector
-      si_config <- config$api$statusinvest
-      if (is.null(si_config)) {
-        stop("Missing config$api$statusinvest")
-      }
-
-      base_url <- si_config$base_url %||% "https://statusinvest.com.br"
-      earnings_endpoint <- si_config$earnings_endpoint %||% "/fii/getearnings"
+      # Config is the source-specific config from data_sources.statusinvest_income
+      base_url <- config$base_url %||% "https://statusinvest.com.br/fii/getearnings"
 
       # Data range - último ano por padrão
       end_date <- Sys.Date()
-      start_date <- si_config$income_start_date %||% (end_date - 365)
+      start_date <- config$income_start_date %||% (end_date - 365)
 
       logger$info(glue("Fetching income data from {start_date} to {end_date}"))
 
-      # Monta URL completa
-      url <- paste0(base_url, earnings_endpoint)
+      # URL já está completa no config
+      url <- base_url
 
       # Parâmetros da query
       # Usa IndiceCode=ifix para pegar todos os FIIs, Filter vazio

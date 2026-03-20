@@ -4,7 +4,7 @@
 data_sources:
   # Portfolio Google Sheets - Base para todos os outros
   portfolio_googlesheets:
-    enabled: true
+    enabled: false  # Disabled - using existing portfolio.rds (permission issue)
     priority: 1
     base_url: ""
     sheet_key: "1k0u_xV21AUEBzfi_e8rZtiAgEJD2OGsQu0QW-IJ_kCU"
@@ -15,7 +15,7 @@ data_sources:
       max_attempts: 3
       backoff_factor: 2
     output: "portfolio.rds"
-    critical: true
+    critical: false
 
   # Status Invest Income API - Proventos batch (60x mais rápido)
   statusinvest_income:

@@ -9,6 +9,40 @@ library(glue)
 
 source("R/utils/logging.R")
 source("R/utils/persistence.R")
+source("R/collectors/collector_base.R")
+
+#' Create Yahoo Prices Collector
+#'
+#' @param config List with configuration
+#' @param logger Logger instance
+#' @return Collector instance
+#' @export
+create_yahoo_prices_collector <- function(config, logger) {
+  collect_fn <- function(config, logger) {
+    # Get portfolio tickers
+    portfolio_file <- config$data$portfolio_file %||% "./data/portfolio.rds"
+    if (!file.exists(portfolio_file)) {
+      return(list(success = FALSE, error = "Portfolio file not found"))
+    }
+    portfolio <- readRDS(portfolio_file)
+    tickers <- unique(portfolio$ticker)
+
+    collect_yahoo_prices(tickers = tickers, config = config, logger = logger)
+  }
+
+  create_base_collector(
+    name = "yahoo_prices",
+    config = config,
+    logger = logger,
+    collect_fn = collect_fn
+  )
+}
+
+#' Coalesce NULL Helper
+#' @keywords internal
+`%||%` <- function(x, y) {
+  if (is.null(x)) y else x
+}
 
 #' Collect Yahoo Finance Prices for FII Portfolio
 #'

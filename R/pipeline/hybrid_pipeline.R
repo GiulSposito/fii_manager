@@ -202,7 +202,8 @@ execute_collector_with_fallback <- function(source_name, source_config, config, 
       stop(glue("Collector file not found: {collector_file}"))
     }
 
-    source(collector_file, local = TRUE)
+    # Source collector file (not local to make function available)
+    source(collector_file, local = FALSE)
 
     # Create collector instance
     collector <- create_collector(source_name, source_config, config, logger)
@@ -286,8 +287,9 @@ get_collector_file <- function(source_name) {
 #' @keywords internal
 create_collector <- function(source_name, source_config, config, logger) {
   # Collector factory - calls create_<name>_collector() function
+  # Pass source_config as first arg, which contains the specific source settings
   collector_fn <- get(glue("create_{source_name}_collector"), mode = "function")
-  collector_fn(source_config, config, logger)
+  collector_fn(source_config, logger)
 }
 
 #' Get Deduplication Columns

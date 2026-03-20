@@ -14,6 +14,26 @@ source("R/utils/logging.R")
 source("R/utils/http_client.R")
 source("R/utils/brazilian_parsers.R")
 source("R/utils/persistence.R")
+source("R/collectors/collector_base.R")
+
+#' Create Fiis.com Lupa Collector
+#'
+#' @param config List with configuration
+#' @param logger Logger instance
+#' @return Collector instance
+#' @export
+create_fiiscom_lupa_collector <- function(config, logger) {
+  collect_fn <- function(config, logger) {
+    collect_fiiscom_lupa(config, logger)
+  }
+
+  create_base_collector(
+    name = "fiiscom_lupa",
+    config = config,
+    logger = logger,
+    collect_fn = collect_fn
+  )
+}
 
 #' Collect FII Metadata from fiis.com.br Lupa API
 #'
