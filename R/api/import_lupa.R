@@ -40,15 +40,16 @@ importLupa <- function(){
   
   resp$status_code
   
-  data.resp <- resp %>% content("text") %>% fromJSON() 
+  data.resp <- resp %>% content("text") %>% fromJSON() |> 
+    fromJSON() |> as_tibble()
   
-  fii.coldict <- data.resp[[1]] %>% as_tibble()
-  fii.data <- data.resp[[2]] %>% as_tibble()
+  # fii.coldict <- data.resp[[1]] %>% as_tibble()
+  # fii.data <- data.resp[[2]] %>% as_tibble()
+  # 
+  # fii.data[fii.data == "N/A"] <- NA
+  # fii.data[fii.data == "00/00/0000"] <- NA
   
-  fii.data[fii.data == "N/A"] <- NA
-  fii.data[fii.data == "00/00/0000"] <- NA
-  
-  fii.data <- fii.data %>% 
+  fii.data <- data.resp %>% 
     mutate(codneg = str_remove_all(codneg, "<.+?>")) %>% 
     mutate_at(vars(iq, tipo), as.factor) %>% 
     mutate_at(vars(urenddatapag, urenddatabase), dmy) %>% 
