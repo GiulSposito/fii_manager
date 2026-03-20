@@ -1,0 +1,263 @@
+BCFF11
+BTG Pactual Fundo de Fundos
+FOF
+9,50%
+BTG Pactual
+9,50
+9,40
+8,48
+Indicação
+BTLG11
+BTG Pactual Logística
+GALPÃO LOGÍSTICO
+7,50%
+BTG PACTUAL
+8,90
+8,90
+99,82
+Indicação
+HSML11
+HSI Malls
+SHOPPING CENTER
+8,50%
+HSI
+9,30
+9,80
+96,30
+Indicação
+KNCR11
+Kinea Rendimentos Imobiliários
+PAPEL
+12,50%
+Kinea
+12,50
+11,60
+103,94
+Indicação
+KNSC11
+Kinea Securities
+PAPEL
+12,50%
+KINEA
+10,60
+11,80
+9,24
+Indicação
+PVBI11
+VBI Prime Properties
+LAJES CORPORATIVAS
+4,00%
+VBI
+8,20
+8,00
+94,12
+Indicação
+RBRR11
+RBR Rendimento High Grade
+PAPEL
+12,50%
+RBR
+9,70
+10,90
+90,45
+Indicação
+RCRB11
+Rio Bravo Renda Corporativa
+LAJES CORPORATIVAS
+9,50%
+RIO BRAVO
+6,40
+7,10
+153,85
+Indicação
+TEPP11
+Tellus Properties
+LAJES CORPORATIVAS
+3,50%
+TELLUS
+8,90
+13,10
+95,32
+Indicação
+TRBL11
+Tellus Rio Bravo Renda Logística
+GALPÃO LOGÍSTICO
+5,00%
+TELLUS / RIO BRAVO
+9,30
+10,10
+100,79
+Indicação
+TRXF11
+TRX Real Estate
+RENDA URBANA
+6,50%
+TRX
+10,50
+9,90
+108,79
+Indicação
+XPML11
+XP Malls
+SHOPPING CENTER
+8,50%
+XP
+8,80
+9,40
+113,80
+Indicação
+Yield UDM: yield dos últimos doze meses.AJFI11
+AJ Malls
+SHOPPING CENTER
+10,00%
+CAPITÂNIA
+4,80
+9,80
+9,11
+Indicação
+CLIN11
+Clave índices de Preços
+PAPEL
+5,00%
+CLAVE
+7,40
+12,30
+96,66
+Indicação
+HFOF11
+Hedge Top FOFII 3
+FOF
+7,50%
+HEDGE
+9,90
+9,90
+74,50
+Indicação
+HGCR11
+CSHG Recebíveis Imobiliários
+PAPEL
+10,00%
+CSHG
+12,00
+10,80
+105,00
+Indicação
+HGLG11
+CSHG Logística
+GALPÃO LOGÍSTICO
+7,50%
+CSHG
+8,10
+7,90
+161,00
+Indicação
+HGPO11
+CSHG Prime Offices
+LAJES CORPORATIVAS
+12,50%
+CSHG
+6,10
+5,90
+305,12
+Indicação
+KNIP11
+Kinea Índice de Preços
+PAPEL
+5,00%
+KINEA
+9,70
+13,00
+97,06
+Indicação
+MCCI11
+Mauá Capital Recebíveis Imobiliários
+PAPEL
+12,50%
+MAUÁ CAPITAL
+11,50
+10,30
+91,15
+Indicação
+MCHY11
+Mauá Capital Real Estate
+MULTIESTRATÉGIA
+7,50%
+MAUÁ CAPITAL
+15,80
+13,40
+9,36
+Indicação
+PATL11
+Pátria Logística
+GALPÃO LOGÍSTICO
+7,50%
+PÁTRIA INVESTIMENTOS
+10,40
+10,40
+62,15
+Indicação
+VISC11
+Vinci Shopping Centers
+SHOPPING CENTER
+7,50%
+VINCI
+9,10
+9,80
+120,98
+Indicação
+WHGR11
+WHG Real Estate
+MULTIESTRATÉGIA
+7,50%
+WHG ASSET
+12,20
+12,00
+9,74
+Indicação
+Yield UDM: yield dos últimos doze meses.
+BCFF11
+BTG Pactual Fundo de Fundos
+FOF
+20,00%
+BTG PACTUAL
+9,50
+9,40
+8,48
+Indicação
+BCIA11
+Bradesco Carteira Imobiliária Ativa
+FOF
+20,00%
+BRADESCO
+9,80
+10,10
+105,52
+Indicação
+HFOF11
+Hedge Top FOFII 3
+FOF
+20,00%
+HEDGE
+9,90
+9,90
+74,50
+Indicação
+RBRF11
+RBR Alpha Fundo De Fundos
+FOF
+20,00%
+RBR
+8,40
+8,10
+8,00
+Indicação
+RVBI11
+VBI REITS FOF
+FOF
+20,00%
+VBI
+11,40
+11,60
+75,70
+Indicação
+Yield UDM: yield dos últimos doze meses.

@@ -1,0 +1,124 @@
+# Pipeline Híbrido de Extração de Dados de FIIs
+# Configuração centralizada para todos os coletores e comportamento do pipeline
+
+data_sources:
+  # Portfolio Google Sheets - Base para todos os outros
+  portfolio_googlesheets:
+    enabled: true
+    priority: 1
+    base_url: ""
+    sheet_key: "1k0u_xV21AUEBzfi_e8rZtiAgEJD2OGsQu0QW-IJ_kCU"
+    timeout_seconds: 60
+    rate_limit:
+      delay_between_requests: 0
+    retry:
+      max_attempts: 3
+      backoff_factor: 2
+    output: "portfolio.rds"
+    critical: true
+
+  # Status Invest Income API - Proventos batch (60x mais rápido)
+  statusinvest_income:
+    enabled: true
+    priority: 1
+    base_url: "https://statusinvest.com.br/fii/getearnings"
+    timeout_seconds: 30
+    rate_limit:
+      delay_between_requests: 1.0
+    retry:
+      max_attempts: 3
+      backoff_factor: 2
+    output: "income.rds"
+    critical: true
+
+  # fiis.com.br Lupa API - Metadata completa de FIIs
+  fiiscom_lupa:
+    enabled: true
+    priority: 2
+    base_url: "https://fiis.com.br/wp-admin/admin-ajax.php?action=fd_quer&fd_cache=sim"
+    timeout_seconds: 60
+    auth:
+      cookie_env_var: "FIISCOM_COOKIE"
+      nonce_env_var: "FIISCOM_NONCE"
+    rate_limit:
+      delay_between_requests: 2.0
+    retry:
+      max_attempts: 2
+      backoff_factor: 2
+    cache_ttl_hours: 168  # 7 dias
+    output: "fiis.rds"
+    critical: true
+
+  # Yahoo Finance Prices - Cotações históricas
+  yahoo_prices:
+    enabled: true
+    priority: 3
+    base_url: "https://finance.yahoo.com"
+    timeout_seconds: 30
+    rate_limit:
+      delay_between_requests: 0.5
+    retry:
+      max_attempts: 3
+      backoff_factor: 2
+    output: "quotations.rds"
+    critical: false
+
+  # Status Invest Indicators - Indicadores fundamentalistas (scraping)
+  statusinvest_indicators:
+    enabled: true
+    priority: 4
+    base_url: "https://statusinvest.com.br/fundos-imobiliarios"
+    timeout_seconds: 30
+    rate_limit:
+      delay_between_requests: 3.0  # Conservador para scraping
+    retry:
+      max_attempts: 2
+      backoff_factor: 2
+    output: "fii_indicators.rds"
+    critical: false
+
+# Configuração de execução
+execution:
+  mode: "incremental"  # ou "full_refresh"
+  cache_enabled: true
+  cache_dir: "data/.cache"
+  backup_enabled: true
+  backup_dir: "data_backup"
+  validation_enabled: true
+  log_level: "INFO"  # DEBUG, INFO, WARN, ERROR
+  log_dir: "data/.logs"
+  parallel_enabled: false  # Executar collectors de mesma prioridade em paralelo
+
+# Configuração de fallback
+fallback:
+  income:
+    primary: "statusinvest_income"
+    fallback: "fiiscom_incomes"
+  quotations:
+    primary: "yahoo_prices"
+    fallback: "fiiscom_quotations"
+
+# Validação de dados
+validation:
+  schema:
+    strict: true  # Falha se schema não bate
+  data_quality:
+    check_future_dates: true
+    max_future_days: 90  # Permite proventos anunciados até 90 dias no futuro
+    check_negative_values: true
+    check_invalid_tickers: true
+  consistency:
+    cross_source: true  # Valida consistência entre sources
+
+# Configuração de cache
+cache:
+  enabled: true
+  ttl_hours: 24
+  max_size_mb: 500
+
+# Configuração de logging
+logging:
+  level: "INFO"
+  format: "structured"  # ou "simple"
+  file_enabled: true
+  console_enabled: true
