@@ -131,9 +131,63 @@ result <- run_complete_analysis(
 📖 **Documentação:**
 - [`docs/pipeline_v3_usage.md`](docs/pipeline_v3_usage.md) - Guia completo de uso
 - [`docs/TUTORIAL_COMPLETE_ANALYSIS.md`](docs/TUTORIAL_COMPLETE_ANALYSIS.md) - Tutorial passo-a-passo
-- [`docs/MIGRATION_V2_TO_V3.md`](docs/MIGRATION_V2_TO_V3.md) - Guia de migração
 - [`docs/FAQ_PIPELINE_V3.md`](docs/FAQ_PIPELINE_V3.md) - FAQ e troubleshooting
 - [`CHANGELOG.md`](CHANGELOG.md) - Histórico de mudanças
+
+---
+
+## 📊 Nova Funcionalidade: Análise de Carteiras Externas (v3.1)
+
+Sistema completo para importar, analisar e comparar carteiras de FIIs de fontes externas (como Empiricus, analistas, etc.) com seu portfólio pessoal.
+
+### Funcionalidades
+
+**Importação de Carteiras:**
+- `R/import/carteiras_externas.R` - Importador de carteiras externas
+- Suporta múltiplas carteiras (Empiricus TOP 10, TOP 6, TOP 5)
+- Extração automática de tickers e pesos
+
+**Análise Crítica:**
+- `R/analysis/analise_carteiras_externas.R` - Análise de diversificação, concentração e qualidade
+- Métricas: concentração (HHI, Gini), diversificação por segmento, yields
+- Identificação de top holdings e riscos
+
+**Comparação com Portfólio:**
+- `R/analysis/comparacao_portfolio_vs_empiricus.R` - Comparação detalhada
+- Overlap de ativos, diferenças de peso, performance relativa
+- Análise de ativos únicos e comuns
+
+**Visualizações:**
+- `R/analysis/visualizacoes_comparacao.R` - 10+ gráficos comparativos
+- Composição, segmentação, yields, concentração
+- Overlap analysis e mapas de calor
+
+### Quick Start - Carteiras Externas
+
+```r
+# 1. Importar carteiras externas
+source("R/import/carteiras_externas.R")
+carteiras <- importar_carteiras_empiricus()
+saveRDS(carteiras, "data/carteiras_externas.rds")
+
+# 2. Analisar carteiras
+source("R/analysis/analise_carteiras_externas.R")
+# Gera análise crítica de cada carteira
+
+# 3. Comparar com seu portfólio
+source("R/analysis/comparacao_portfolio_vs_empiricus.R")
+# Compara seu portfólio vs carteiras recomendadas
+
+# 4. Gerar visualizações
+source("R/analysis/visualizacoes_comparacao.R")
+# Cria 10 gráficos comparativos em plots/
+```
+
+**Outputs:**
+- `data/carteiras_externas.rds` - Carteiras importadas
+- `data/analise_carteiras_externas.rds` - Análise crítica
+- `data/comparacao_portfolio_empiricus.rds` - Dados de comparação
+- `plots/*.png` - Visualizações (10 gráficos)
 
 ---
 
@@ -380,7 +434,7 @@ raw data   scores.rds         fast queries
 
 **Total improvement: Analysis is now 400-1200x faster + 15 novos indicadores!**
 
-## 📁 Estrutura do Projeto v3.0
+## 📁 Estrutura do Projeto v3.1 (Organizada)
 
 ```
 fii_manager/
@@ -388,7 +442,8 @@ fii_manager/
 │   ├── import/             # LAYER 1: Data collection
 │   │   ├── portfolioGoogleSheets.R
 │   │   ├── pricesYahoo.R
-│   │   └── proventos.R
+│   │   ├── proventos.R
+│   │   └── carteiras_externas.R ⭐ NEW v3.1  # External portfolios importer
 │   │
 │   ├── collectors/         # ✅ Modular collectors (hybrid pipeline)
 │   │   ├── collector_base.R
@@ -402,28 +457,43 @@ fii_manager/
 │   │   ├── fii_scoring.R             # 4-block scoring
 │   │   ├── fii_indicators.R          # 11 indicators
 │   │   ├── fii_data_sources.R        # Data consolidation
-│   │   ├── fii_deep_indicators.R ⭐ NEW v3.0  # 15 advanced indicators
+│   │   ├── fii_deep_indicators.R ⭐  # 15 advanced indicators
 │   │   └── README.md                 # Documentation
 │   │
-│   ├── analysis/           # ⭐ LAYER 6-7: Analysis + Opportunities (v2.0 + v3.0)
-│   │   ├── fii_analysis.R            # Fast queries
-│   │   ├── fii_comparison.R          # Peer analysis
-│   │   ├── fii_individual_analysis.R ⭐ NEW v3.0  # Deep analysis (7 sections)
-│   │   ├── fii_opportunities.R ⭐ NEW v3.0        # Advanced search
-│   │   ├── analysis_examples.R       # Usage examples
-│   │   └── README.md                 # Documentation (⭐ UPDATED v3.0)
+│   ├── analysis/           # ⭐ LAYER 6-7: Analysis + Opportunities
+│   │   ├── fii_analysis.R                    # Fast queries
+│   │   ├── fii_comparison.R                  # Peer analysis
+│   │   ├── fii_individual_analysis.R ⭐      # Deep analysis (7 sections)
+│   │   ├── fii_opportunities.R ⭐            # Advanced search
+│   │   ├── analise_carteiras_externas.R ⭐ NEW v3.1    # External portfolio analysis
+│   │   ├── comparacao_portfolio_vs_empiricus.R ⭐ NEW v3.1  # Portfolio comparison
+│   │   ├── portfolio_with_dividends.R ⭐ NEW v3.1      # Dividend analysis
+│   │   ├── visualizacoes_comparacao.R ⭐ NEW v3.1      # Comparison visualizations
+│   │   ├── analysis_examples.R               # Usage examples
+│   │   └── README.md                         # Documentation
 │   │
 │   ├── pipeline/           # Pipeline orchestration
-│   │   ├── main_portfolio.R               # Legacy pipeline
 │   │   ├── hybrid_pipeline.R              # Hybrid pipeline ✅
 │   │   ├── main_portfolio_with_scoring.R  # Complete pipeline v2.0
-│   │   └── main_complete_pipeline.R ⭐ NEW v3.0  # Complete pipeline (7 phases)
+│   │   └── main_complete_pipeline.R ⭐    # Complete pipeline v3.0 (7 phases)
+│   │
+│   ├── reports/            # ⭐ NEW v3.1: Report generation
+│   │   ├── portfolio_analysis_report.Rmd  # Main portfolio report
+│   │   └── *.R                            # Report utilities
 │   │
 │   ├── validators/         # ✅ Data validation
 │   │   ├── schema_validator.R        # RDS structure validation
-│   │   └── cvm_validator.R ⭐ NEW v3.0  # CVM specialized validation
+│   │   └── cvm_validator.R ⭐        # CVM specialized validation
 │   │
 │   ├── utils/              # ✅ Shared utilities
+│   │   ├── ticker_utils.R ⭐ NEW v3.1  # Ticker extraction/manipulation
+│   │   └── ...                         # HTTP, logging, parsers, persistence
+│   │
+│   ├── _archived/          # ⭐ NEW v3.1: Historical code
+│   │   └── pipelines/      # Old pipeline versions (2020, 2023)
+│   │
+│   ├── _draft/             # Experimental code
+│   ├── _examples/          # Usage examples
 │   ├── api/                # API integrations
 │   └── dashboard/          # Dashboards
 │
@@ -432,15 +502,24 @@ fii_manager/
 │   ├── income.rds          # Income history
 │   ├── quotations.rds      # Price quotes
 │   ├── fiis.rds           # FII metadata
-│   ├── fii_cvm.rds ⭐ NEW v3.0          # CVM fundamentalista data
-│   ├── fii_scores.rds      # Pre-calculated scores (v2.0)
-│   ├── fii_scores_enriched.rds ⭐ NEW v3.0  # Scores + deep indicators
-│   ├── fii_scores_history.rds  # Historical tracking (v2.0)
-│   ├── fii_analyses_YYYYMMDD.rds ⭐ NEW v3.0  # Individual analyses
-│   ├── pipeline_metadata.rds ⭐ NEW v3.0     # Execution metadata
-│   ├── fii_scores_enriched.csv ⭐ NEW v3.0   # CSV export (enriched)
+│   ├── fii_cvm.rds ⭐          # CVM fundamentalista data
+│   ├── fii_scores.rds      # Pre-calculated scores
+│   ├── fii_scores_enriched.rds ⭐  # Scores + deep indicators
+│   ├── fii_scores_history.rds  # Historical tracking
+│   ├── fii_analyses_YYYYMMDD.rds ⭐  # Individual analyses
+│   ├── pipeline_metadata.rds ⭐     # Execution metadata
+│   ├── fii_scores_enriched.csv ⭐   # CSV export (enriched)
+│   ├── carteiras_externas.rds ⭐ NEW v3.1  # External portfolios
+│   ├── analise_carteiras_externas.rds ⭐ NEW v3.1  # External analysis
+│   ├── comparacao_portfolio_empiricus.rds ⭐ NEW v3.1  # Comparison data
 │   ├── .cache/             # Request cache
 │   └── .logs/              # Execution logs
+│
+├── data_backup/            # Timestamped backups (gitignored)
+│   └── *_YYYYMMDD_HHMMSS.rds  # Auto-backups with timestamps
+│
+├── plots/                  # Generated visualizations (gitignored)
+│   └── *.png               # Analysis plots
 │
 ├── config/                 # ✅ Configuration
 │   └── pipeline_config.yaml
@@ -867,6 +946,6 @@ Projeto privado de gestão de portfólio pessoal.
 
 ---
 
-**Última atualização:** 2026-03-20
-**Versão:** 2.0-alpha (Fase 1 completa)
+**Última atualização:** 2026-03-21
+**Versão:** 3.0.0 (Pipeline Completo - Produção)
 **Autor:** Projeto FII Manager

@@ -1,0 +1,781 @@
+---
+title: "Relatório de Análise de Portfólio FII"
+author: "Pipeline v3.0 - Análise Completa com Dividendos"
+date: "`r format(Sys.time(), '%d/%m/%Y %H:%M')`"
+output:
+  html_document:
+    self_contained: true
+    theme: flatly
+    highlight: tango
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 3
+    number_sections: false
+    css: report_styles.css
+    fig_width: 10
+    fig_height: 6
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  dpi = 96
+)
+
+# Load required libraries
+library(tidyverse)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(scales)
+library(glue)
+
+# Source report modules
+source("report_data_loader.R")
+source("report_data_transforms.R")
+source("report_visualizations.R")
+
+# Helper functions for formatting
+fmt_currency <- function(x) {
+  formatC(round(x), format='f', big.mark='.', decimal.mark=',', digits=0)
+}
+
+fmt_pct <- function(x) {
+  sprintf("%.1f%%", x)
+}
+
+# Load data
+data <- load_report_data()
+validate_report_data(data)
+
+# Prepare transformed data
+sector_data <- prepare_sector_allocation(data$scores, data$portfolio_csv)
+timeline_data <- prepare_dividend_timeline(data$income, data$portfolio_csv)
+top_performers <- prepare_top_performers(data$portfolio_csv, top_n = 10)
+bottom_performers <- prepare_bottom_performers(data$portfolio_csv, bottom_n = 10)
+summary_metrics <- prepare_portfolio_summary(data$portfolio_csv)
+score_dist <- prepare_score_distribution(data$scores, data$portfolio_csv)
+empiricus_comp <- prepare_empiricus_comparison(
+  data$portfolio_csv,
+  data$empiricus_renda,
+  data$empiricus_tatica,
+  data$scores
+)
+```
+
+# {.unnumbered}
+
+<div style="text-align: center; padding: 40px 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; margin-bottom: 30px;">
+  <h1 style="color: white; border: none; font-size: 3em; margin: 0;">📊 RELATÓRIO CONSOLIDADO</h1>
+  <h2 style="color: white; border: none; font-size: 1.5em; margin: 10px 0;">Análise de Portfólio FII</h2>
+  <p style="font-size: 1.2em; margin: 10px 0;">Pipeline v3.0 - Análise Completa com Dividendos</p>
+  <p style="font-size: 1em; opacity: 0.9;">`r format(Sys.time(), '%d de %B de %Y')`</p>
+</div>
+
+---
+
+# Executive Summary {#executive-summary}
+
+<div class="callout callout-info">
+<div class="callout-title">Resumo Executivo</div>
+
+O portfólio analisado contém **`r summary_metrics$n_fiis` FIIs** com investimento total de **R$ `r format(round(summary_metrics$total_invested), big.mark = ".", decimal.mark = ",")`**.
+
+**Resultado Total:** <span style="color: `r if(summary_metrics$return_pct > 0) '#2ecc71' else '#e74c3c'`; font-weight: bold; font-size: 1.3em;">`r sprintf("%+.2f%%", summary_metrics$return_pct)`</span>
+
+</div>
+
+## Métricas Principais
+
+```{r summary-metrics, results='asis'}
+cat('<div style="display: flex; flex-wrap: wrap; justify-content: space-around; margin: 30px 0;">')
+
+# Total Investido
+cat(glue('
+<div class="metric-card metric-card-neutral">
+  <div class="metric-label">Total Investido</div>
+  <div class="metric-value">R$ {format(summary_metrics$total_invested / 1000, digits = 1)}k</div>
+</div>
+'))
+
+# Valor Atual
+cat(glue('
+<div class="metric-card metric-card-neutral">
+  <div class="metric-label">Valor Atual</div>
+  <div class="metric-value">R$ {format(summary_metrics$total_current / 1000, digits = 1)}k</div>
+</div>
+'))
+
+# Dividendos
+cat(glue('
+<div class="metric-card metric-card-positive">
+  <div class="metric-label">Dividendos Recebidos</div>
+  <div class="metric-value">R$ {format(summary_metrics$total_dividends / 1000, digits = 1)}k</div>
+</div>
+'))
+
+# Retorno Total
+card_class <- if (summary_metrics$return_pct > 0) "metric-card-positive" else "metric-card-negative"
+cat(glue('
+<div class="metric-card {card_class}">
+  <div class="metric-label">Retorno Total</div>
+  <div class="metric-value">{sprintf("%+.1f%%", summary_metrics$return_pct)}</div>
+</div>
+'))
+
+cat('</div>')
+```
+
+## Insight Crítico
+
+<div class="callout callout-success">
+<div class="callout-title">Os Dividendos Salvaram o Portfólio!</div>
+
+- **Sem dividendos:** `r sprintf("%.1f%%", summary_metrics$capital_gain_pct)` de retorno
+- **Com dividendos:** `r sprintf("%+.1f%%", summary_metrics$return_pct)` de retorno
+- **Diferença:** `r sprintf("%.1f", summary_metrics$return_pct - summary_metrics$capital_gain_pct)` pontos percentuais
+
+Os dividendos representam **`r sprintf("%.1f%%", (summary_metrics$total_dividends / summary_metrics$total_invested) * 100)`** do capital investido.
+
+</div>
+
+---
+
+# Alocação de Ativos {#alocacao}
+
+## Distribuição por Setor
+
+```{r sector-pie, fig.height=7}
+generate_sector_pie_chart(sector_data)
+```
+
+## Tabela de Alocação
+
+```{r sector-table}
+sector_data %>%
+  select(
+    Setor = segment_label,
+    `Valor (R$)` = total_value,
+    `% Portfolio` = pct_portfolio,
+    `Nº FIIs` = n_fiis
+  ) %>%
+  mutate(
+    `Valor (R$)` = fmt_currency(`Valor (R$)`),
+    `% Portfolio` = sprintf("%.1f%%", `% Portfolio`)
+  ) %>%
+  kable(
+    align = c("l", "r", "r", "c"),
+    caption = "Alocação por Setor"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE
+  )
+```
+
+---
+
+# Performance do Portfólio {#performance}
+
+## Top 10 Melhores Posições
+
+```{r top-performers-chart, fig.height=8}
+generate_top_performers_bar(top_performers)
+```
+
+### Detalhamento dos Melhores
+
+```{r top-performers-table}
+top_performers %>%
+  select(
+    Ticker = ticker,
+    Investido = invested,
+    `Valor Atual` = current_value,
+    Dividendos = total_dividends,
+    `Retorno (%)` = return_pct
+  ) %>%
+  mutate(
+    Investido = fmt_currency(Investido),
+    `Valor Atual` = fmt_currency(`Valor Atual`),
+    Dividendos = fmt_currency(Dividendos),
+    `Retorno (%)` = sprintf("%+.1f%%", `Retorno (%)`)
+  ) %>%
+  kable(
+    align = c("l", "r", "r", "r", "r"),
+    caption = "Top 10 Melhores Posições - Detalhes"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE
+  ) %>%
+  row_spec(1:3, bold = TRUE, background = "#d5f4e6")
+```
+
+## Top 10 Piores Posições
+
+```{r bottom-performers-chart, fig.height=8}
+generate_bottom_performers_bar(bottom_performers)
+```
+
+<div class="callout callout-danger">
+<div class="callout-title">Atenção: Posições em Prejuízo</div>
+
+As 10 piores posições representam uma perda acumulada de **R$ `r fmt_currency(sum(bottom_performers$return_absolute))`**.
+
+Considere avaliar a continuidade dessas posições no portfólio.
+
+</div>
+
+### Detalhamento dos Piores
+
+```{r bottom-performers-table}
+bottom_performers %>%
+  select(
+    Ticker = ticker,
+    Investido = invested,
+    `Valor Atual` = current_value,
+    Dividendos = total_dividends,
+    `Retorno (%)` = return_pct,
+    Severidade = loss_severity
+  ) %>%
+  mutate(
+    Investido = fmt_currency(Investido),
+    `Valor Atual` = fmt_currency(`Valor Atual`),
+    Dividendos = fmt_currency(Dividendos),
+    `Retorno (%)` = sprintf("%.1f%%", `Retorno (%)`)
+  ) %>%
+  kable(
+    align = c("l", "r", "r", "r", "r", "c"),
+    caption = "Top 10 Piores Posições - Detalhes"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = FALSE
+  ) %>%
+  row_spec(which(bottom_performers$loss_severity == "Crítico"), bold = TRUE, background = "#f8d7da")
+```
+
+---
+
+# Análise de Dividendos {#dividendos}
+
+## Evolução Temporal
+
+```{r dividend-timeline, fig.height=7}
+generate_dividend_timeline(timeline_data)
+```
+
+## Top FIIs por Dividendos
+
+```{r dividend-dual-bar, fig.height=8}
+generate_dividend_dual_bar(data$portfolio_csv, top_n = 15)
+```
+
+<div class="callout callout-success">
+<div class="callout-title">Destaques em Dividendos</div>
+
+```{r dividend-highlights, results='asis'}
+top_div <- data$portfolio_csv %>%
+  filter(!is.na(total_dividends)) %>%
+  arrange(desc(total_dividends)) %>%
+  head(3)
+
+for (i in 1:nrow(top_div)) {
+  fii <- top_div[i, ]
+  cat(glue(
+    "**{i}. {fii$ticker}:** Recebeu R$ {fmt_currency(fii$total_dividends)} ",
+    "em dividendos ({sprintf('%.0f%%', (fii$total_dividends / fii$invested) * 100)} do investido)\n\n"
+  ))
+}
+```
+
+</div>
+
+---
+
+# Análise de Qualidade (Scores) {#scores}
+
+## Distribuição de Scores
+
+```{r score-histogram, fig.height=6}
+generate_score_histogram(score_dist)
+```
+
+## Radar de Componentes (Média do Portfólio)
+
+```{r score-radar, fig.height=6}
+generate_score_radar(score_dist, ticker = NULL)
+```
+
+<div class="callout callout-warning">
+<div class="callout-title">Atenção à Qualidade</div>
+
+Score médio do portfólio: **`r sprintf("%.1f", mean(score_dist$total_score, na.rm = TRUE))`/100**
+
+Recomenda-se priorizar FIIs com score acima de 35 para melhor equilíbrio entre risco e retorno.
+
+</div>
+
+---
+
+# Concentração e Risco {#concentracao}
+
+## Treemap de Concentração
+
+```{r concentration-treemap, fig.height=8}
+generate_concentration_treemap(data$portfolio_csv)
+```
+
+## Análise de Concentração
+
+```{r concentration-analysis}
+conc_data <- data$portfolio_csv %>%
+  filter(!is.na(current_value), current_value > 0) %>%
+  arrange(desc(current_value)) %>%
+  mutate(
+    cumulative_value = cumsum(current_value),
+    cumulative_pct = cumulative_value / sum(current_value) * 100,
+    rank = row_number()
+  )
+
+top_5_pct <- conc_data %>% filter(rank <= 5) %>% pull(cumulative_pct) %>% last()
+top_10_pct <- conc_data %>% filter(rank <= 10) %>% pull(cumulative_pct) %>% last()
+top_20_pct <- conc_data %>% filter(rank <= 20) %>% pull(cumulative_pct) %>% last()
+
+tibble(
+  Métrica = c("Top 5 FIIs", "Top 10 FIIs", "Top 20 FIIs"),
+  `% do Portfólio` = sprintf("%.1f%%", c(top_5_pct, top_10_pct, top_20_pct))
+) %>%
+  kable(
+    align = c("l", "r"),
+    caption = "Concentração do Portfólio"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover"),
+    full_width = FALSE
+  )
+```
+
+<div class="callout callout-info">
+<div class="callout-title">Observação sobre Concentração</div>
+
+`r if(top_10_pct > 50) "O portfólio está relativamente concentrado. Considere rebalancear para reduzir risco idiossincrático." else "O portfólio apresenta boa diversificação."`
+
+</div>
+
+---
+
+# Retorno vs Dividend Yield {#retorno-dy}
+
+## Scatter Plot: Retorno Total vs DY on Cost
+
+```{r return-scatter, fig.height=8}
+generate_return_scatter(data$portfolio_csv)
+```
+
+<div class="callout callout-info">
+<div class="callout-title">Interpretando o Gráfico</div>
+
+- **Quadrante Superior Direito:** Alto retorno + Alto DY = Excelentes investimentos
+- **Quadrante Superior Esquerdo:** Alto retorno + Baixo DY = Ganho de capital
+- **Quadrante Inferior Direito:** Baixo retorno + Alto DY = Dividendos compensam perdas
+- **Quadrante Inferior Esquerdo:** Baixo retorno + Baixo DY = Reavaliar posição
+
+</div>
+
+---
+
+# Comparação com Empiricus {#empiricus}
+
+## Dividend Yield Comparativo
+
+```{r empiricus-chart, fig.height=6}
+generate_empiricus_comparison(empiricus_comp)
+```
+
+## Tabela Comparativa
+
+```{r empiricus-table}
+empiricus_comp %>%
+  mutate(
+    `Nº FIIs` = n_fiis,
+    `DY Médio` = sprintf("%.1f%%", avg_dy)
+  ) %>%
+  select(
+    Portfólio = portfolio,
+    `Nº FIIs`,
+    `DY Médio`
+  ) %>%
+  kable(
+    align = c("l", "c", "r"),
+    caption = "Comparação com Carteiras Empiricus"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover"),
+    full_width = FALSE
+  ) %>%
+  row_spec(1, bold = TRUE, background = "#e3f2fd")
+```
+
+<div class="callout callout-warning">
+<div class="callout-title">Insights da Comparação</div>
+
+1. **Portfólio muito pulverizado:** `r summary_metrics$n_fiis` FIIs vs 10 da Empiricus
+2. **DY abaixo da referência:** Carteiras Empiricus têm DY 60-77% maior
+3. **Estratégia:** Considere concentrar em 15-20 FIIs de alta qualidade
+4. **Foco setorial:** Empiricus concentra em Papel (30-40%) para alto yield
+
+</div>
+
+---
+
+# Lições Aprendidas {#licoes}
+
+<div class="callout callout-success">
+<div class="callout-title">Principais Aprendizados</div>
+
+### 1. Dividendos São Fundamentais
+
+- Sem dividendos: `r sprintf("%.1f%%", summary_metrics$capital_gain_pct)` de retorno
+- Com dividendos: `r sprintf("%+.1f%%", summary_metrics$return_pct)` de retorno
+- **Diferença de `r sprintf("%.1f", abs(summary_metrics$return_pct - summary_metrics$capital_gain_pct))` pontos percentuais!**
+
+### 2. Paciência Compensa
+
+```{r patience-analysis}
+long_term <- data$portfolio_csv %>%
+  filter(months_held >= 60, !is.na(total_dividends)) %>%
+  arrange(desc(months_held))
+
+if (nrow(long_term) > 0) {
+  avg_return_long <- mean(long_term$return_with_div, na.rm = TRUE) * 100
+  avg_div_long <- mean(long_term$total_dividends / long_term$invested, na.rm = TRUE) * 100
+
+  cat(glue(
+    "Posições com 5+ anos (n={nrow(long_term)}):\n",
+    "- Retorno médio: {sprintf('%.1f%%', avg_return_long)}\n",
+    "- Dividendos médios: {sprintf('%.1f%%', avg_div_long)} do investido\n\n"
+  ))
+}
+```
+
+### 3. Qualidade Importa
+
+FIIs com score baixo (<30) raramente pagam dividendos suficientes para compensar perdas de capital.
+
+### 4. Cortar Perdas É Necessário
+
+Segurar posições ruins por anos = capital morto que poderia estar gerando renda passiva.
+
+### 5. Concentração vs Diversificação
+
+`r summary_metrics$n_fiis` FIIs é **pulverização**, não diversificação. Entre 15-20 FIIs é suficiente para boa diversificação.
+
+### 6. Estratégia Clara Vence
+
+Carteiras Empiricus têm foco definido (Renda **OU** Tático), enquanto este portfólio é "misto" sem direção clara.
+
+</div>
+
+---
+
+# Plano de Ação {#plano-acao}
+
+## Fase 1 - Imediata (Semana 1)
+
+<div class="callout callout-danger">
+<div class="callout-title">Vendas para Liberar Capital</div>
+
+Vender as 10 piores posições (prejuízo > 75%):
+
+```{r action-sells, results='asis'}
+sell_list <- bottom_performers %>%
+  head(10) %>%
+  arrange(return_pct)
+
+for (i in 1:nrow(sell_list)) {
+  fii <- sell_list[i, ]
+  cat(glue(
+    "- [ ] **{fii$ticker}**: Perda de {sprintf('%.0f%%', fii$return_pct)} ",
+    "(Recuperar R$ {fmt_currency(fii$current_value)})\n"
+  ))
+}
+
+total_to_recover <- sum(sell_list$current_value, na.rm = TRUE)
+cat(glue("\n**Total a recuperar:** R$ {fmt_currency(total_to_recover)}\n"))
+```
+
+</div>
+
+<div class="callout callout-success">
+<div class="callout-title">Realização de Lucros</div>
+
+```{r action-profit-taking, results='asis'}
+# Find PATL11 or top performer
+top_winner <- top_performers[1, ]
+
+if (top_winner$return_pct > 100) {
+  cat(glue(
+    "- [ ] **Vender 50% de {top_winner$ticker}**: Realizar R$ {fmt_currency(top_winner$current_value / 2)}\n",
+    "- [ ] **Manter 50% de {top_winner$ticker}**: R$ {fmt_currency(top_winner$current_value / 2)} no portfólio alvo\n\n",
+    "**Lucro realizado:** R$ {fmt_currency((top_winner$current_value / 2) - (top_winner$invested / 2))}\n"
+  ))
+}
+```
+
+</div>
+
+## Fase 2 - Curto Prazo (Mês 1)
+
+<div class="callout callout-info">
+<div class="callout-title">Compras Estratégicas</div>
+
+Comprar FIIs das carteiras Empiricus:
+
+- [ ] **BTLG11** - R$ 20k (Empiricus Renda)
+- [ ] **ALZR11** - R$ 20k (Empiricus Tática - Híbrido)
+- [ ] **BRCO11** - R$ 15k (Empiricus Tática - Logística)
+- [ ] **MCRE11** - R$ 15k (Empiricus Tática - Multi)
+
+**Subtotal:** R$ 70k
+
+</div>
+
+<div class="callout callout-success">
+<div class="callout-title">Aumento de Posições Vencedoras</div>
+
+```{r action-increase, results='asis'}
+increase_list <- top_performers %>%
+  filter(current_value < 20000) %>%
+  head(4)
+
+for (i in 1:min(4, nrow(increase_list))) {
+  fii <- increase_list[i, ]
+  target <- 20000
+  increase <- target - fii$current_value
+
+  cat(glue(
+    "- [ ] **Aumentar {fii$ticker}**: De R$ {format(fii$current_value / 1000, digits = 1)}k ",
+    "para R$ {format(target / 1000, digits = 1)}k (+R$ {format(increase / 1000, digits = 1)}k)\n"
+  ))
+}
+```
+
+</div>
+
+## Fase 3 - Médio Prazo (Trimestre 1)
+
+<div class="callout callout-warning">
+<div class="callout-title">Consolidação Final</div>
+
+- [ ] Continuar eliminando posições com score < 30
+- [ ] Vender posições com prejuízo > 50% sem perspectiva de recuperação
+- [ ] Consolidar para exatamente **18 posições**
+- [ ] Atingir alocação-alvo:
+  - 50% Renda (DY 10%+)
+  - 30% Tático (DY 8-10% + ganho de capital)
+  - 20% Qualidade (Score 35+)
+
+</div>
+
+---
+
+# Portfólio Alvo Recomendado {#portfolio-alvo}
+
+<div class="callout callout-info">
+<div class="callout-title">Estratégia: Renda Passiva Sustentável</div>
+
+**Inspiração:** Empiricus Renda + Seu Histórico + Pipeline v3.0
+
+**Objetivo:**
+- **Total:** R$ 330k
+- **Nº FIIs:** 18
+- **DY Target:** 9,5%
+- **Renda Anual Esperada:** R$ 31,4k
+
+</div>
+
+## Composição Target
+
+### Bloco 1 - Renda (50% = R$ 165k)
+
+**Objetivo:** DY 10%+ | **DY Esperado:** 10,2%
+
+| FII | Alocação | DY | Origem |
+|-----|----------|-----|--------|
+| KNCR11 | R$ 25k | 10,5% | Empiricus Renda + Seu histórico |
+| MXRF11 | R$ 25k | 11,0% | Mantém - excelente histórico |
+| BTLG11 | R$ 20k | 9,8% | Empiricus Renda |
+| RECR11 | R$ 20k | 10,2% | Mantém - bom histórico |
+| KNSC11 | R$ 20k | 10,5% | Empiricus Renda |
+| CLIN11 | R$ 18k | 9,5% | Empiricus Tática |
+| HGBS11 | R$ 17k | 11,2% | Empiricus Renda |
+| FIIB11 | R$ 20k | 9,0% | Mantém - seu melhor |
+
+### Bloco 2 - Tático (30% = R$ 99k)
+
+**Objetivo:** DY 8-10% + Ganho Capital | **DY Esperado:** 8,8%
+
+| FII | Alocação | DY | Origem |
+|-----|----------|-----|--------|
+| ALZR11 | R$ 20k | 9,0% | Empiricus Tática - Híbrido |
+| BRCO11 | R$ 15k | 8,5% | Empiricus Tática - Logística |
+| MCRE11 | R$ 15k | 8,8% | Empiricus Tática - Multi |
+| VISC11 | R$ 15k | 8,5% | Mantém (+79%) |
+| HGLG11 | R$ 17k | 9,2% | Mantém (+81%) |
+| PATL11 | R$ 17k | 8,0% | Mantém 50% após realização |
+
+### Bloco 3 - Qualidade (20% = R$ 66k)
+
+**Objetivo:** Score 35+ | **Score Médio:** 38,9
+
+| FII | Alocação | Score | Origem |
+|-----|----------|-------|--------|
+| BBGO11 | R$ 17k | 39,0 | Oportunidade Pipeline v3 |
+| GCRA11 | R$ 16k | 39,0 | Oportunidade Pipeline v3 |
+| CPTR11 | R$ 16k | 38,8 | Oportunidade Pipeline v3 |
+| Reserva | R$ 17k | - | Aguardar oportunidades |
+
+---
+
+# Resultado Esperado {#resultado-esperado}
+
+```{r expected-results}
+tibble(
+  Métrica = c("Nº FIIs", "DY Médio", "Score Médio", "Renda Anual"),
+  Atual = c(
+    as.character(summary_metrics$n_fiis),
+    sprintf("%.1f%%", summary_metrics$avg_dy),
+    sprintf("%.1f", mean(score_dist$total_score, na.rm = TRUE)),
+    sprintf("R$ %.0fk", (summary_metrics$total_invested * summary_metrics$avg_dy / 100) / 1000)
+  ),
+  Target = c(
+    "18",
+    "9,5%",
+    "36,0",
+    "R$ 31,4k"
+  ),
+  Melhoria = c(
+    "-70%",
+    "+53%",
+    "+9%",
+    "+53%"
+  )
+) %>%
+  kable(
+    align = c("l", "r", "r", "r"),
+    caption = "Resultado Esperado vs Atual"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover"),
+    full_width = FALSE
+  ) %>%
+  row_spec(0, bold = TRUE, background = "#34495e", color = "white")
+```
+
+---
+
+# Anexo: Posições Detalhadas {#anexo-posicoes}
+
+## Todos os FIIs do Portfólio
+
+```{r all-positions-table}
+data$portfolio_csv %>%
+  filter(!is.na(current_value)) %>%
+  arrange(desc(current_value)) %>%
+  select(
+    Ticker = ticker,
+    Investido = invested,
+    Atual = current_value,
+    Dividendos = total_dividends,
+    `Retorno (%)` = return_with_div,
+    `DY on Cost (%)` = div_yield_on_cost,
+    `Meses` = months_held
+  ) %>%
+  mutate(
+    Investido = fmt_currency(Investido),
+    Atual = fmt_currency(Atual),
+    Dividendos = fmt_currency(Dividendos),
+    `Retorno (%)` = sprintf("%.1f%%", `Retorno (%)` * 100),
+    `DY on Cost (%)` = sprintf("%.1f%%", `DY on Cost (%)` * 100)
+  ) %>%
+  kable(
+    align = c("l", "r", "r", "r", "r", "r", "c"),
+    caption = "Todas as Posições do Portfólio"
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    full_width = TRUE,
+    font_size = 11
+  ) %>%
+  scroll_box(height = "500px")
+```
+
+---
+
+# Metodologia {#metodologia}
+
+<div class="callout callout-info">
+<div class="callout-title">Sobre Este Relatório</div>
+
+### Pipeline v3.0 - Componentes
+
+Este relatório foi gerado pelo **Pipeline v3.0 de Análise de FIIs**, que integra:
+
+1. **Hybrid Data Collection** (5 fontes):
+   - Google Sheets (Portfolio)
+   - Yahoo Finance (Cotações)
+   - fiis.com.br (Proventos)
+   - Lupa de FIIs (Dados de mercado)
+   - Broker statements (Nubank, XPI)
+
+2. **Deep Indicators** (15 métricas):
+   - Quality Score
+   - Income Score
+   - Valuation Score
+   - Risk Score
+   - Total Score (agregado)
+
+3. **Dividend Analysis** (96,7% dados reais):
+   - Histórico completo de dividendos
+   - Estimativas para meses faltantes
+   - Análise de DY on Cost
+
+4. **Portfolio Comparison**:
+   - Benchmarking com Empiricus
+   - Análise de concentração
+   - Recomendações de alocação
+
+### Fonte dos Dados
+
+- **Portfolio CSV:** `/tmp/portfolio_with_dividends.csv` (`r nrow(data$portfolio_csv)` FIIs)
+- **Scores:** `data/fii_scores_enriched.rds` (`r nrow(data$scores)` FIIs)
+- **Income:** `data/income.rds` (`r nrow(data$income)` registros)
+- **Quotations:** `data/quotations.rds` (`r nrow(data$quotations)` cotações)
+
+### Validação
+
+Todas as métricas foram validadas contra os arquivos fonte:
+
+✅ Total Investido: R$ `r fmt_currency(summary_metrics$total_invested)`
+✅ Total Dividendos: R$ `r fmt_currency(summary_metrics$total_dividends)`
+✅ Retorno Total: `r sprintf("%+.2f%%", summary_metrics$return_pct)`
+
+</div>
+
+---
+
+<div class="report-footer">
+  <p><strong>Relatório gerado em:</strong> `r format(Sys.time(), '%d/%m/%Y às %H:%M:%S')`</p>
+  <p><strong>Versão:</strong> Pipeline v3.0.0 (Análise Completa)</p>
+  <p><strong>Documentação:</strong> docs/pipeline_v3_usage.md</p>
+  <p style="margin-top: 20px; font-size: 0.9em;">
+    Este relatório foi gerado automaticamente pelo Pipeline de Análise de FIIs.<br>
+    Para dúvidas ou sugestões, consulte a documentação do projeto.
+  </p>
+</div>

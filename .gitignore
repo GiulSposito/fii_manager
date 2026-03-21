@@ -9,3 +9,14 @@ data
 /import
 export
 /.claude
+.secrets
+
+# Generated outputs
+plots/*.png
+plots/*.pdf
+data_backup/
+data_backup_*/
+
+# Generated reports
+R/reports/*.html
+R/reports/*.pdf

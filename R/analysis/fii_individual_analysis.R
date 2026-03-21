@@ -133,7 +133,7 @@ build_perfil_section <- function(score_data, cvm_data, cache) {
 
   list(
     ticker = score_data$ticker,
-    nome = if (nrow(fii_info) > 0) fii_info$nome else NA_character_,
+    nome = if (nrow(fii_info) > 0) fii_info$post_title else score_data$ticker,
     tipo_fii = score_data$tipo_fii,
     segmento = score_data$tipo_fii,
     administrador = if (nrow(fii_info) > 0) fii_info$administrador else NA_character_,
@@ -329,7 +329,7 @@ build_renda_section <- function(score_data, income_hist, history, cache) {
   # Sustainability (estimate payout from income data)
   avg_monthly_income <- if (nrow(income_hist) >= 12) {
     income_12m <- income_hist %>% head(12)
-    mean(income_12m$valor_provento, na.rm = TRUE)
+    mean(income_12m$rendimento, na.rm = TRUE)
   } else {
     NA_real_
   }
@@ -493,14 +493,13 @@ build_risco_section <- function(score_data, quotes, history, cache) {
   # Max drawdown (12 months)
   drawdown_data <- calculate_drawdown(quotes, months = 12)
 
-  # Liquidity metrics
+  # Liquidity metrics (volume not available in current data structure)
   liquidez <- if (nrow(quotes) >= 21) {
     recent_quotes <- quotes %>%
-      head(21) %>%
-      filter(!is.na(volume))
+      head(21)
 
     list(
-      volume_medio = mean(recent_quotes$volume * recent_quotes$price, na.rm = TRUE),
+      volume_medio = NA_real_,  # Volume not available
       dias_negociacao = nrow(recent_quotes),
       spread_bid_ask = NA_real_  # Requires bid/ask data
     )
@@ -891,11 +890,14 @@ load_analysis_cache <- function() {
 
   cache <- list()
 
-  # Load scores (required)
-  if (!file.exists("data/fii_scores.rds")) {
-    stop("Scores file not found. Run scoring pipeline first: source('R/transform/fii_score_pipeline.R'); run_scoring_pipeline()")
+  # Load scores (required) - try enriched first, fallback to basic
+  if (file.exists("data/fii_scores_enriched.rds")) {
+    cache$scores <- readRDS("data/fii_scores_enriched.rds")
+  } else if (file.exists("data/fii_scores.rds")) {
+    cache$scores <- readRDS("data/fii_scores.rds")
+  } else {
+    stop("Scores file not found. Run scoring pipeline first: source('R/pipeline/main_complete_pipeline.R'); run_complete_analysis()")
   }
-  cache$scores <- readRDS("data/fii_scores.rds")
 
   # Load core data
   cache$quotations <- readRDS("data/quotations.rds")
