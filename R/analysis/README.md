@@ -393,6 +393,391 @@ scores %>%
 
 ---
 
-**Last Updated:** 2026-03-20
-**Version:** 1.0.0 (Refactored)
+---
+
+## 🆕 Advanced Analysis (v3.0) ⭐ NEW!
+
+### 1. Individual FII Deep Analysis (7 Sections)
+
+**File:** `fii_individual_analysis.R`
+
+Comprehensive analysis framework for individual FII evaluation with 7 detailed sections.
+
+```r
+source("R/analysis/fii_individual_analysis.R")
+
+# Analyze single FII
+analysis <- analyze_fii_deep("HGLG11")
+
+# Print formatted analysis
+print_fii_analysis(analysis)
+```
+
+**7 Analysis Sections:**
+
+1. **Perfil do FII** - Basic profile (segment, PL, cotistas, governance)
+2. **Análise de Qualidade** - Quality metrics with deep indicators
+   - Block A score breakdown
+   - Alavancagem (leverage)
+   - Concentração de cotistas
+   - Estabilidade patrimônio
+   - Taxa de eficiência
+3. **Análise de Renda** - Income analysis
+   - DY 12m, crescimento, consistência
+   - Histórico de proventos (últimos 12 meses)
+   - Volatilidade de DY
+4. **Análise de Valuation** - Valuation metrics
+   - P/VP atual vs histórico
+   - Preço justo estimado
+   - Desconto/prêmio
+   - Z-score P/VP vs segmento
+5. **Análise de Risco** - Risk assessment
+   - Volatilidade
+   - Maximum drawdown
+   - Estabilidade de rentabilidade
+   - Risk score breakdown
+6. **Cenários e Projeções** - Scenario modeling
+   - Best case
+   - Base case
+   - Worst case
+   - Probabilidades e drivers
+7. **Pontos de Atenção / Alertas** - Warning flags
+   - Red flags (critical issues)
+   - Yellow flags (watch closely)
+   - Green flags (positive indicators)
+
+**Usage Example:**
+
+```r
+# Analyze FII
+analysis <- analyze_fii_deep("KNRI11")
+
+# Access specific sections
+analysis$perfil       # Basic profile
+analysis$qualidade    # Quality analysis
+analysis$renda        # Income analysis
+analysis$valuation    # Valuation
+analysis$risco        # Risk
+analysis$cenarios     # Scenarios
+analysis$alertas      # Alerts
+
+# Export to markdown (requires pipeline v3.0 with reports)
+source("R/pipeline/main_complete_pipeline.R")
+run_complete_analysis(
+  tickers = c("KNRI11"),
+  include_analysis = TRUE,
+  include_reports = TRUE
+)
+# Output: reports/YYYY-MM-DD/KNRI11_analysis.md
+```
+
+**Performance:**
+- ~5 seconds per FII
+- Uses cache for optimal speed
+
+---
+
+### 2. Advanced Opportunities Search
+
+**File:** `fii_opportunities.R` ⭐ NEW v3.0
+
+Multi-criteria opportunity finder with advanced ranking and classification.
+
+```r
+source("R/analysis/fii_opportunities.R")
+
+# Advanced search with user profile
+opportunities <- identify_opportunities(
+  scores = readRDS("data/fii_scores_enriched.rds"),
+  user_profile = list(
+    risk_tolerance = "moderate",      # low, moderate, high
+    preferred_segments = c("Logística", "Lajes Corporativas"),
+    min_liquidity = 1000000,          # R$ 1M/day
+    investment_horizon = "long"       # short, medium, long
+  ),
+  min_score = 65,
+  min_dy = 0.10,
+  max_pvp = 1.1
+)
+
+# View top opportunities
+opportunities$top_opportunities %>%
+  head(10) %>%
+  select(ticker, total_score, dy_12m, pvp, opportunity_type, score_justification)
+```
+
+**Features:**
+
+- **Multi-criteria filtering:** Score, DY, P/VP, liquidez, segmento
+- **User profile matching:** Adapts to risk tolerance and preferences
+- **Opportunity classification:**
+  - `value` - Undervalued (low P/VP, high quality)
+  - `growth` - Growth potential (high momentum, improving metrics)
+  - `income` - Income-focused (high DY, consistent distributions)
+  - `hybrid` - Balanced opportunities
+- **Advanced ranking:** Considers multiple factors weighted by profile
+- **Justification:** Each opportunity includes reasoning
+
+**Functions:**
+
+| Function | Purpose |
+|----------|---------|
+| `identify_opportunities()` | Main search function |
+| `filter_by_score()` | Score-based filtering |
+| `filter_by_segment()` | Segment filtering |
+| `filter_by_user_profile()` | Profile matching |
+| `rank_opportunities()` | Advanced ranking |
+| `classify_opportunity_type()` | Type classification |
+| `generate_opportunity_summary()` | Summary report |
+
+**Example Use Cases:**
+
+```r
+# Value investing (buy undervalued quality FIIs)
+value_opps <- identify_opportunities(
+  user_profile = list(
+    risk_tolerance = "moderate",
+    investment_horizon = "long"
+  ),
+  min_score = 70,
+  max_pvp = 0.90,  # At least 10% discount
+  min_dy = 0.08
+)
+
+value_opps$top_opportunities %>%
+  filter(opportunity_type == "value")
+
+# Income investing (maximize dividend yield)
+income_opps <- identify_opportunities(
+  user_profile = list(
+    risk_tolerance = "low",
+    investment_horizon = "medium"
+  ),
+  min_score = 60,
+  min_dy = 0.12,  # High yield
+  max_pvp = 1.0
+)
+
+income_opps$top_opportunities %>%
+  filter(opportunity_type == "income")
+
+# Growth investing (momentum + improving fundamentals)
+growth_opps <- identify_opportunities(
+  user_profile = list(
+    risk_tolerance = "high",
+    preferred_segments = c("Logística", "Data Centers"),
+    investment_horizon = "long"
+  ),
+  min_score = 65
+)
+
+growth_opps$top_opportunities %>%
+  filter(opportunity_type == "growth") %>%
+  filter(!is.na(momentum_12m), momentum_12m > 0)
+```
+
+---
+
+### 3. Integrated Complete Analysis
+
+**File:** `main_complete_pipeline.R` (Phase 6-7)
+
+Pipeline v3.0 integrates analysis and report generation.
+
+```r
+source("R/pipeline/main_complete_pipeline.R")
+
+# Run complete analysis (all phases)
+result <- run_complete_analysis(
+  mode = "incremental",
+  tickers = "portfolio",
+  include_cvm = TRUE,
+  include_deep_indicators = TRUE,
+  include_analysis = TRUE,      # ⭐ Individual analysis
+  include_reports = TRUE         # ⭐ Markdown reports
+)
+
+# Generated files:
+# - data/fii_analyses_YYYYMMDD.rds
+# - reports/YYYY-MM-DD/TICKER_analysis.md (per FII)
+# - reports/YYYY-MM-DD/opportunities_summary.md
+```
+
+**Integrated workflow:**
+
+1. **Phase 1-5:** Data collection → Validation → Scoring → Deep indicators → Persist
+2. **Phase 6:** Individual FII analysis (7 sections per FII)
+3. **Phase 7:** Markdown report generation
+
+**Benefits:**
+- One-command complete analysis
+- Consistent data across all analyses
+- Automated report generation
+- Batch processing for multiple FIIs
+
+---
+
+## 🎯 Workflow Comparison
+
+### v2.0 Workflow (Fast Queries)
+
+```r
+# 1. Run pipeline
+source("R/pipeline/main_portfolio_with_scoring.R")
+
+# 2. Instant analysis
+source("R/analysis/fii_analysis.R")
+print_portfolio_summary()
+opportunities <- find_opportunities(min_score = 70)
+```
+
+**Best for:** Daily portfolio review, quick filtering, market scanning
+
+---
+
+### v3.0 Workflow (Deep Analysis)
+
+```r
+# 1. Run complete pipeline
+source("R/pipeline/main_complete_pipeline.R")
+result <- run_complete_analysis(
+  include_analysis = TRUE,
+  include_reports = TRUE
+)
+
+# 2. Deep individual analysis
+source("R/analysis/fii_individual_analysis.R")
+analysis <- analyze_fii_deep("HGLG11")
+print_fii_analysis(analysis)
+
+# 3. Advanced opportunities
+source("R/analysis/fii_opportunities.R")
+opportunities <- identify_opportunities(
+  user_profile = list(risk_tolerance = "moderate"),
+  min_score = 65
+)
+```
+
+**Best for:** Monthly deep dive, investment research, buy/sell decisions
+
+---
+
+## 🔄 Integration Examples
+
+### Example 1: Complete Monthly Analysis
+
+```r
+# Month-end complete analysis
+source("R/pipeline/main_complete_pipeline.R")
+
+result <- run_complete_analysis(
+  mode = "full",
+  tickers = "all",
+  include_cvm = TRUE,
+  include_deep_indicators = TRUE,
+  include_analysis = TRUE,
+  include_reports = TRUE
+)
+
+# Review generated reports
+reports <- list.files("reports", recursive = TRUE, pattern = "\\.md$")
+cat(glue("Generated {length(reports)} reports\n"))
+
+# Load analyses for further processing
+analyses <- readRDS(result$phase_results$analysis$output_file)
+
+# Extract specific insights
+top_quality <- analyses %>%
+  map_dfr(~tibble(
+    ticker = .x$ticker,
+    quality_score = .x$qualidade$score,
+    quality_rank = .x$qualidade$rank
+  )) %>%
+  arrange(desc(quality_score)) %>%
+  head(10)
+```
+
+---
+
+### Example 2: Portfolio Deep Dive
+
+```r
+# Analyze all portfolio holdings deeply
+source("R/analysis/fii_individual_analysis.R")
+
+portfolio <- readRDS("data/portfolio.rds")
+tickers <- unique(portfolio$ticker)
+
+# Deep analysis for each
+analyses <- map(tickers, analyze_fii_deep)
+names(analyses) <- tickers
+
+# Find concerning holdings
+concerns <- analyses %>%
+  keep(~length(.x$alertas$red_flags) > 0)
+
+cat(glue("⚠️ {length(concerns)} holdings with red flags\n"))
+
+# Review concerns
+for (ticker in names(concerns)) {
+  cat(glue("\n{ticker}:\n"))
+  print(concerns[[ticker]]$alertas$red_flags)
+}
+```
+
+---
+
+### Example 3: Research Workflow
+
+```r
+# 1. Find opportunities
+source("R/analysis/fii_opportunities.R")
+opportunities <- identify_opportunities(min_score = 70)
+
+# 2. Deep dive top 3
+source("R/analysis/fii_individual_analysis.R")
+top_3 <- opportunities$top_opportunities$ticker[1:3]
+
+analyses <- map(top_3, analyze_fii_deep)
+names(analyses) <- top_3
+
+# 3. Compare with portfolio holdings
+source("R/analysis/fii_comparison.R")
+comparisons <- map(top_3, ~compare_with_peers(.x, max_peers = 5))
+
+# 4. Decision support
+for (ticker in top_3) {
+  cat(glue("\n{'='*60}\n"))
+  cat(glue("RESEARCH: {ticker}\n"))
+  cat(glue("{'='*60}\n\n"))
+
+  # Análise
+  print_fii_analysis(analyses[[ticker]])
+
+  # Comparação
+  cat("\n--- PEER COMPARISON ---\n")
+  print_comparison_report(comparisons[[ticker]])
+}
+```
+
+---
+
+## 📚 Documentation Links
+
+### v2.0 (Fast Queries)
+- `fii_analysis.R` - Portfolio and opportunity functions
+- `fii_comparison.R` - Peer comparison functions
+- `analysis_examples.R` - Usage examples
+
+### v3.0 (Deep Analysis) ⭐ NEW
+- `fii_individual_analysis.R` - Individual FII deep analysis (7 sections)
+- `fii_opportunities.R` - Advanced opportunity search
+- [`../docs/pipeline_v3_usage.md`](../docs/pipeline_v3_usage.md) - Pipeline v3.0 guide
+- [`../docs/TUTORIAL_COMPLETE_ANALYSIS.md`](../docs/TUTORIAL_COMPLETE_ANALYSIS.md) - Complete tutorial
+- [`../docs/FAQ_PIPELINE_V3.md`](../docs/FAQ_PIPELINE_V3.md) - FAQ
+
+---
+
+**Last Updated:** 2026-03-21
+**Version:** 2.0.0 (v3.0 Advanced Analysis Added)
 **Status:** ✅ Production Ready

@@ -1,6 +1,169 @@
 # FII Manager - Sistema de Gestão de Portfólio de FIIs
 
-Sistema R para gestão, análise e visualização de portfólio de Fundos de Investimento Imobiliário (FIIs) brasileiros.
+Sistema R completo para gestão, análise e visualização de portfólio de Fundos de Investimento Imobiliário (FIIs) brasileiros.
+
+**Versão:** 3.0.0 | **Última atualização:** 2026-03-21 | **Status:** ✅ Produção
+
+---
+
+## ⭐ Novidades v3.0.0 (2026-03-21)
+
+### 🎯 Pipeline Completo de 7 Fases - ORQUESTRADOR INTEGRADO ✅
+
+**Novo:** `R/pipeline/main_complete_pipeline.R` - Orquestrador único para todo o fluxo de análise.
+
+#### Arquitetura de 8 Camadas
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  LAYER 1: IMPORT (Data Collection)                         │
+│  • hybrid_pipeline (StatusInvest, Lupa, Yahoo, Portfolio)  │
+│  • fii_cvm_data (CVM fundamentalista - NEW!)              │
+├────────────────────────────────────────────────────────────┤
+│  LAYER 2: CLEAN (Validation)                              │
+│  • schema_validator (estrutura RDS)                        │
+│  • cvm_validator (validação CVM - NEW!)                   │
+├────────────────────────────────────────────────────────────┤
+│  LAYER 3: TRANSFORM (Basic Scoring)                        │
+│  • fii_score_pipeline (11 indicators, 4 blocks)           │
+│  • fii_indicators (DY, P/VP, liquidez, crescimento...)    │
+├────────────────────────────────────────────────────────────┤
+│  LAYER 4: DEEP INDICATORS (Advanced) - NEW!               │
+│  • fii_deep_indicators (15 novos indicadores)             │
+│    - Qualidade: alavancagem, concentração, estabilidade   │
+│    - Temporal: momentum 3m/6m/12m, trend, volatilidade    │
+│    - Relativo: z-scores, percentis, relative strength     │
+├────────────────────────────────────────────────────────────┤
+│  LAYER 5: PERSIST (Storage)                               │
+│  • Auto-backup com timestamp                              │
+│  • Exports RDS + CSV                                       │
+│  • Metadata tracking                                       │
+├────────────────────────────────────────────────────────────┤
+│  LAYER 6: ANALYSIS (Individual) - NEW!                    │
+│  • fii_individual_analysis (7 seções de análise)          │
+│  • Perfil, Qualidade, Renda, Valuation, Risco, Cenários  │
+├────────────────────────────────────────────────────────────┤
+│  LAYER 7: OPPORTUNITIES (Portfolio) - NEW!                │
+│  • fii_opportunities (busca avançada de oportunidades)    │
+│  • Filtros multi-critério, ranking, peer comparison       │
+├────────────────────────────────────────────────────────────┤
+│  LAYER 8: REPORT (Markdown) - NEW!                        │
+│  • Relatórios markdown por FII                            │
+│  • Relatório consolidado de oportunidades                 │
+└────────────────────────────────────────────────────────────┘
+```
+
+#### Novos Arquivos Implementados (7 principais)
+
+1. **`R/pipeline/main_complete_pipeline.R`** - Orquestrador das 7 fases
+2. **`R/transform/fii_deep_indicators.R`** - 15 indicadores avançados
+3. **`R/import/fii_cvm_data.R`** - Coletor de dados CVM
+4. **`R/validators/cvm_validator.R`** - Validação especializada CVM
+5. **`R/analysis/fii_individual_analysis.R`** - Análise profunda por FII (7 seções)
+6. **`R/analysis/fii_opportunities.R`** - Busca avançada de oportunidades
+7. **`docs/pipeline_v3_usage.md`** - Guia completo de uso
+
+#### 15 Novos Indicadores Deep
+
+**Qualidade (4):**
+- `alavancagem` - Ratio passivo/PL (dados CVM)
+- `concentracao_cotistas` - Risco de concentração
+- `estabilidade_patrimonio` - CV do PL 12m
+- `taxa_eficiencia` - Taxa admin / PL
+
+**Temporal (6):**
+- `momentum_3m`, `momentum_6m`, `momentum_12m` - Performance temporal
+- `trend_score` - Tendência de crescimento
+- `volatilidade_dy` - Volatilidade dividend yield
+- `volatilidade_rentabilidade` - Volatilidade rentabilidade
+
+**Relativo (5):**
+- `zscore_dy_segmento` - Z-score DY vs segmento
+- `zscore_pvp_segmento` - Z-score P/VP vs segmento
+- `percentil_segmento` - Ranking dentro do segmento
+- `relative_strength` - Força relativa vs mercado
+- `peer_comparison_score` - Score vs pares
+
+#### Features v3.0
+
+- 🚀 **Pipeline unificado** - Uma função para rodar tudo
+- 📊 **7 fases integradas** - Import → Clean → Transform → Deep → Persist → Analysis → Report
+- 🔬 **15 indicadores avançados** - Alavancagem, momentum, z-scores, volatilidade
+- 📈 **Dados CVM** - Fundamentalistas oficiais da Comissão de Valores Mobiliários
+- ✅ **Validação robusta** - Schema, ranges, consistência, completude (4 níveis)
+- 📝 **Relatórios markdown** - Análises individuais (7 seções) e oportunidades
+- 🎛️ **Configurável** - Modos full/incremental, portfolio/all, análise on-demand
+- 🎯 **3 tipos de análise** - Individual, Peer Comparison, Opportunities
+- 📊 **Análise individual** - 7 seções: Perfil, Qualidade, Renda, Valuation, Risco, Cenários, Alertas
+- 🔍 **Busca de oportunidades** - Filtros avançados multi-critério com ranking
+
+**Quick Start Pipeline v3.0:**
+```r
+source("R/pipeline/main_complete_pipeline.R")
+
+# Execução completa (mensal)
+result <- run_complete_analysis(
+  mode = "full",
+  tickers = "all",
+  include_cvm = TRUE,
+  include_deep_indicators = TRUE,
+  include_analysis = TRUE,
+  include_reports = TRUE
+)
+
+# Atualização rápida (diária)
+result <- run_complete_analysis(
+  mode = "incremental",
+  tickers = "portfolio",
+  include_cvm = FALSE,
+  include_deep_indicators = TRUE
+)
+
+# Análise profunda de FIIs específicos
+result <- run_complete_analysis(
+  mode = "incremental",
+  tickers = c("HGLG11", "KNRI11", "MXRF11"),
+  include_analysis = TRUE,
+  include_reports = TRUE
+)
+```
+
+📖 **Documentação:**
+- [`docs/pipeline_v3_usage.md`](docs/pipeline_v3_usage.md) - Guia completo de uso
+- [`docs/TUTORIAL_COMPLETE_ANALYSIS.md`](docs/TUTORIAL_COMPLETE_ANALYSIS.md) - Tutorial passo-a-passo
+- [`docs/MIGRATION_V2_TO_V3.md`](docs/MIGRATION_V2_TO_V3.md) - Guia de migração
+- [`docs/FAQ_PIPELINE_V3.md`](docs/FAQ_PIPELINE_V3.md) - FAQ e troubleshooting
+- [`CHANGELOG.md`](CHANGELOG.md) - Histórico de mudanças
+
+---
+
+## ⭐ Framework v2.0.0 (2026-03-20)
+
+### 🎯 Framework de Análise Multifatorial - 100% IMPLEMENTADO ✅
+
+Sistema completo de scoring e análise de FIIs baseado em metodologia de 4 blocos:
+
+- 📊 **Score multifatorial** (0-100) para todos os FIIs
+- ⚡ **600x mais rápido** - Análises instantâneas (<1s vs 2min)
+- 🏗️ **Arquitetura correta** - Import → Transform → Analysis
+- 📈 **Histórico de scores** - Track mudanças ao longo do tempo
+- 🎯 **4 blocos de avaliação** - Qualidade, Renda, Valuation, Risco
+- 🔍 **Análise de pares** - Compare com FIIs similares
+- 💡 **Busca de oportunidades** - Filtros inteligentes
+
+**Quick Start Análise:**
+```r
+# 1. Rodar pipeline (1x ao dia, ~2min)
+source("R/pipeline/main_portfolio_with_scoring.R")
+
+# 2. Análises instantâneas (<1s)
+source("R/analysis/analysis_examples.R")
+quick_test_analysis()
+```
+
+📖 **Documentação:** [`QUICKSTART.md`](QUICKSTART.md) | [`R/analysis/README.md`](R/analysis/README.md)
+
+---
 
 ## 🚀 Pipeline Híbrido - 100% IMPLEMENTADO ✅
 
@@ -17,6 +180,7 @@ Pipeline híbrido de coleta de dados que combina o melhor de múltiplas fontes:
 ### Progresso
 
 ```
+Pipeline Híbrido (Coleta de Dados):
 Fase 1: Fundação                     ████████████████████ 100% ✅
 Fase 2: Collectors Principais        ████████████████████ 100% ✅
 Fase 3: Collectors Complementares    ████████████████████ 100% ✅
@@ -24,103 +188,331 @@ Fase 4: Orquestração                 █████████████�
 Fase 5: Validação                    ████████████████████ 100% ✅
 Fase 6: Documentação e Testes        ████████████████████ 100% ✅
 Fase 7: Migração para Produção       ████████████████████ 100% ✅
+
+Framework de Análise (Scoring):
+Fase 1: Fundação + Scoring           ████████████████████ 100% ✅
+Fase 2: Refatoração Arquitetura      ████████████████████ 100% ✅
 ```
 
-📖 **Documentação:** Ver [`YOLO_MODE_SUMMARY.md`](YOLO_MODE_SUMMARY.md), [`TEST_RESULTS.md`](TEST_RESULTS.md) e [`docs/PIPELINE_GUIDE.md`](docs/PIPELINE_GUIDE.md)
+📖 **Documentação:** [`YOLO_MODE_SUMMARY.md`](YOLO_MODE_SUMMARY.md), [`TEST_RESULTS.md`](TEST_RESULTS.md), [`docs/PIPELINE_GUIDE.md`](docs/PIPELINE_GUIDE.md)
 
 ## 📋 Visão Geral
 
-Este projeto é um sistema completo de análise de portfólio de FIIs que:
+Sistema completo de gestão de portfólio de FIIs com **3 camadas principais**:
 
-1. **Importa dados** de múltiplas fontes (Google Sheets, APIs, web scraping)
-2. **Processa e limpa** dados financeiros brasileiros
-3. **Analisa performance** de portfólio e FIIs individuais
-4. **Visualiza resultados** em dashboards e relatórios
+### 1️⃣ **Import Layer** (Coleta de Dados)
+- Importa dados de múltiplas fontes (Google Sheets, APIs, web scraping)
+- Pipeline híbrido 60x mais rápido
+- Validação e consistência automática
 
-## 🏗️ Arquitetura
+### 2️⃣ **Transform Layer** (Transformação e Scoring) ⭐ NOVO v2.0
+- Calcula scores multifatoriais (0-100) para todos os FIIs
+- Framework de 4 blocos (Qualidade, Renda, Valuation, Risco)
+- Histórico de scores e detecção de mudanças
+- Output: `data/fii_scores.rds` (pre-calculado)
 
-### Pipeline Atual (Produção)
+### 3️⃣ **Analysis Layer** (Análises e Insights) ⭐ NOVO v2.0
+- Análises instantâneas (<1s) usando scores pré-calculados
+- Portfolio summary, peer comparison, opportunity finder
+- Dashboards e relatórios interativos
 
+**Fluxo completo:**
 ```
-Google Sheets → Portfolio
-     ↓
-Yahoo Finance → Quotations
-     ↓
-fiis.com.br  → Proventos (lento, ~30 min)
-     ↓
-Lupa API     → Metadata FIIs
-     ↓
-Análises e Dashboards
-```
-
-**Problemas:** Lento, frágil, código duplicado
-
-### Pipeline Híbrido (Em Desenvolvimento)
-
-```
-Google Sheets     → Portfolio (único com integração sheets)
-     ↓
-Status Invest API → Proventos (1 request batch, 60x mais rápido!)
-     ↓
-fiis.com.br Lupa  → Metadata FIIs (538 FIIs, 22 campos únicos)
-     ↓
-Status Invest Web → Indicadores (P/VP, vacância, etc.)
-     ↓
-Yahoo Finance     → Cotações históricas
-     ↓
-Validação Cross-Source
-     ↓
-Análises e Dashboards
+Import → Transform (scoring) → Analysis (insights)
+  ↓          ↓                    ↓
+raw data   scores.rds         fast queries
+(~2 min)   (cached)           (<1 second)
 ```
 
-**Benefícios:** Rápido, robusto, modular, novos dados
+## 🏗️ Arquitetura v3.0
 
-## 📁 Estrutura do Projeto
+### Arquitetura Completa (8 Camadas) - ⭐ ATUALIZADO v3.0
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  LAYER 1: IMPORT (Data Collection)                           │
+│  R/import/ + R/collectors/                                   │
+├──────────────────────────────────────────────────────────────┤
+│  Google Sheets     → Portfolio                               │
+│  Status Invest API → Proventos (60x mais rápido!)            │
+│  fiis.com.br Lupa  → Metadata (538 FIIs)                     │
+│  Status Invest Web → Indicadores                             │
+│  Yahoo Finance     → Cotações                                │
+│  CVM API ⭐ NEW    → Dados fundamentalistas oficiais         │
+│                                                               │
+│  Output: data/*.rds (raw data)                               │
+│  Time: ~2-12 minutes (hybrid pipeline + CVM)                 │
+└────────────────────┬─────────────────────────────────────────┘
+                     │
+┌────────────────────▼─────────────────────────────────────────┐
+│  LAYER 2: CLEAN (Validation) ⭐ NEW v3.0                     │
+│  R/validators/                                                │
+├──────────────────────────────────────────────────────────────┤
+│  • schema_validator.R     (estrutura RDS)                    │
+│  • cvm_validator.R ⭐ NEW (validação especializada CVM)      │
+│                                                               │
+│  Validates:                                                   │
+│  - Schema compliance (types, required fields)                │
+│  - Range validation (min/max bounds)                         │
+│  - Consistency (cross-source validation)                     │
+│  - Completeness (coverage, missing data)                     │
+│                                                               │
+│  Output: Validation reports, warnings, errors                │
+│  Time: <30 seconds                                            │
+└────────────────────┬─────────────────────────────────────────┘
+                     │
+┌────────────────────▼─────────────────────────────────────────┐
+│  LAYER 3: TRANSFORM (Basic Scoring) - v2.0                  │
+│  R/transform/                                                 │
+├──────────────────────────────────────────────────────────────┤
+│  • fii_score_pipeline.R   (orchestration)                    │
+│  • fii_scoring.R          (4-block scoring)                  │
+│  • fii_indicators.R       (11 indicators)                    │
+│  • fii_data_sources.R     (consolidation)                    │
+│                                                               │
+│  Calculates:                                                  │
+│  - Block A: Quality (25%)                                    │
+│  - Block B: Income (30%)                                     │
+│  - Block C: Valuation (25%)                                  │
+│  - Block D: Risk (20%)                                       │
+│  - Total Score (0-100)                                       │
+│  - Recommendation (COMPRAR/MANTER/OBSERVAR/EVITAR)           │
+│                                                               │
+│  Output: data/fii_scores.rds (pre-calculated)                │
+│  Time: ~2 minutes (calculated once)                          │
+└────────────────────┬─────────────────────────────────────────┘
+                     │
+┌────────────────────▼─────────────────────────────────────────┐
+│  LAYER 4: DEEP INDICATORS (Advanced) ⭐ NEW v3.0             │
+│  R/transform/                                                 │
+├──────────────────────────────────────────────────────────────┤
+│  • fii_deep_indicators.R ⭐ NEW (15 novos indicadores)       │
+│                                                               │
+│  Enriches with:                                               │
+│  - Qualidade: alavancagem, concentração, estabilidade        │
+│  - Temporal: momentum (3m/6m/12m), trend, volatilidade       │
+│  - Relativo: z-scores, percentis, relative strength          │
+│                                                               │
+│  Output: data/fii_scores_enriched.rds                        │
+│  Time: ~1 minute                                              │
+└────────────────────┬─────────────────────────────────────────┘
+                     │
+┌────────────────────▼─────────────────────────────────────────┐
+│  LAYER 5: PERSIST (Storage & Backup) ⭐ ENHANCED v3.0       │
+│  R/utils/                                                     │
+├──────────────────────────────────────────────────────────────┤
+│  • Auto-backup with timestamp (data_backup/)                 │
+│  • RDS + CSV exports                                          │
+│  • Metadata tracking (execution history)                     │
+│                                                               │
+│  Output: Backups, exports, metadata                          │
+│  Time: <10 seconds                                            │
+└────────────────────┬─────────────────────────────────────────┘
+                     │
+┌────────────────────▼─────────────────────────────────────────┐
+│  LAYER 6: ANALYSIS (Individual + Portfolio) ⭐ NEW v3.0      │
+│  R/analysis/                                                  │
+├──────────────────────────────────────────────────────────────┤
+│  • fii_individual_analysis.R ⭐ NEW (7 seções)               │
+│  • fii_comparison.R          (peer analysis)                 │
+│  • analysis_examples.R       (usage guide)                   │
+│                                                               │
+│  Individual Analysis (7 sections):                            │
+│  1. Perfil do FII                                            │
+│  2. Análise de Qualidade (deep indicators)                   │
+│  3. Análise de Renda (proventos históricos)                  │
+│  4. Análise de Valuation (P/VP, preço justo)                 │
+│  5. Análise de Risco (volatilidade, drawdown)                │
+│  6. Cenários e Projeções (best/base/worst)                   │
+│  7. Pontos de Atenção / Alertas                              │
+│                                                               │
+│  Portfolio Analysis:                                          │
+│  - Summary dashboards                                         │
+│  - Peer comparison (segment benchmarks)                      │
+│  - Score change tracking                                      │
+│  - Portfolio vs market                                        │
+│                                                               │
+│  Time: <1 second (portfolio), ~5s per FII (individual)       │
+└────────────────────┬─────────────────────────────────────────┘
+                     │
+┌────────────────────▼─────────────────────────────────────────┐
+│  LAYER 7: OPPORTUNITIES (Search & Rank) ⭐ NEW v3.0          │
+│  R/analysis/                                                  │
+├──────────────────────────────────────────────────────────────┤
+│  • fii_opportunities.R ⭐ NEW (busca avançada)               │
+│                                                               │
+│  Features:                                                    │
+│  - Multi-criteria filters (score, DY, P/VP, liquidez...)     │
+│  - Advanced ranking algorithms                                │
+│  - Segment-specific filters                                   │
+│  - User profile matching                                      │
+│  - Opportunity classification (value, growth, income, etc.)   │
+│                                                               │
+│  Output: Ranked opportunities list                           │
+│  Time: <1 second                                              │
+└────────────────────┬─────────────────────────────────────────┘
+                     │
+┌────────────────────▼─────────────────────────────────────────┐
+│  LAYER 8: REPORT (Markdown Generation) ⭐ NEW v3.0           │
+│  R/pipeline/main_complete_pipeline.R                          │
+├──────────────────────────────────────────────────────────────┤
+│  • Individual FII reports (7 sections per FII)               │
+│  • Opportunities summary report                               │
+│  • Markdown formatted for readability                        │
+│                                                               │
+│  Output: reports/YYYY-MM-DD/*.md                             │
+│  Time: ~2-5s per report                                       │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Performance Comparison v3.0
+
+| Operation | Before v2.0 | After v2.0 | After v3.0 | Improvement |
+|-----------|-------------|------------|------------|-------------|
+| Data collection | 45 min | 2 min | 2-12 min* | **22x** ✅ |
+| Portfolio analysis | 2 min | 0.2 s | 0.2 s | **600x** ✅ |
+| Find opportunities | 2 min | 0.3 s | 0.3 s | **400x** ✅ |
+| Peer comparison | 4 min | 0.2 s | 0.2 s | **1200x** ✅ |
+| Individual analysis | N/A | N/A | 5 s/FII ⭐ | **NEW!** |
+| Deep indicators | N/A | N/A | 1 min ⭐ | **NEW!** |
+
+**\*12 min com CVM (mensal), 2 min incremental (diário)**
+
+**Total improvement: Analysis is now 400-1200x faster + 15 novos indicadores!**
+
+## 📁 Estrutura do Projeto v3.0
 
 ```
 fii_manager/
 ├── R/
-│   ├── collectors/          # NOVO: Coletores modulares (Fase 2+)
-│   ├── utils/              # NOVO: Utilidades compartilhadas (Fase 1 ✅)
-│   │   ├── brazilian_parsers.R    # Parse números/datas BR
-│   │   ├── http_client.R          # HTTP client httr2
-│   │   ├── logging.R              # Logging estruturado
-│   │   └── persistence.R          # Persistência RDS
-│   ├── validators/         # NOVO: Validação de dados (Fase 5)
-│   ├── pipeline/           # Pipelines de orquestração
-│   │   ├── main_portfolio.R       # Pipeline produção atual
-│   │   └── hybrid_pipeline.R      # NOVO: Pipeline híbrido (Fase 4)
-│   ├── import/             # Importadores de dados
-│   ├── transform/          # Transformações de dados
-│   ├── analysis/           # Scripts de análise
-│   ├── api/                # Integrações com APIs
-│   └── dashboard/          # Dashboards RMarkdown
+│   ├── import/             # LAYER 1: Data collection
+│   │   ├── portfolioGoogleSheets.R
+│   │   ├── pricesYahoo.R
+│   │   └── proventos.R
+│   │
+│   ├── collectors/         # ✅ Modular collectors (hybrid pipeline)
+│   │   ├── collector_base.R
+│   │   ├── statusinvest_income_collector.R
+│   │   ├── statusinvest_indicators_collector.R
+│   │   ├── fiiscom_lupa_collector.R
+│   │   └── yahoo_prices_collector.R
+│   │
+│   ├── transform/          # ⭐ LAYER 3-4: Scoring + Deep (v2.0 + v3.0)
+│   │   ├── fii_score_pipeline.R      # Main pipeline
+│   │   ├── fii_scoring.R             # 4-block scoring
+│   │   ├── fii_indicators.R          # 11 indicators
+│   │   ├── fii_data_sources.R        # Data consolidation
+│   │   ├── fii_deep_indicators.R ⭐ NEW v3.0  # 15 advanced indicators
+│   │   └── README.md                 # Documentation
+│   │
+│   ├── analysis/           # ⭐ LAYER 6-7: Analysis + Opportunities (v2.0 + v3.0)
+│   │   ├── fii_analysis.R            # Fast queries
+│   │   ├── fii_comparison.R          # Peer analysis
+│   │   ├── fii_individual_analysis.R ⭐ NEW v3.0  # Deep analysis (7 sections)
+│   │   ├── fii_opportunities.R ⭐ NEW v3.0        # Advanced search
+│   │   ├── analysis_examples.R       # Usage examples
+│   │   └── README.md                 # Documentation (⭐ UPDATED v3.0)
+│   │
+│   ├── pipeline/           # Pipeline orchestration
+│   │   ├── main_portfolio.R               # Legacy pipeline
+│   │   ├── hybrid_pipeline.R              # Hybrid pipeline ✅
+│   │   ├── main_portfolio_with_scoring.R  # Complete pipeline v2.0
+│   │   └── main_complete_pipeline.R ⭐ NEW v3.0  # Complete pipeline (7 phases)
+│   │
+│   ├── validators/         # ✅ Data validation
+│   │   ├── schema_validator.R        # RDS structure validation
+│   │   └── cvm_validator.R ⭐ NEW v3.0  # CVM specialized validation
+│   │
+│   ├── utils/              # ✅ Shared utilities
+│   ├── api/                # API integrations
+│   └── dashboard/          # Dashboards
 │
-├── config/                 # NOVO: Configuração (Fase 1 ✅)
+├── data/                   # Data files (gitignored)
+│   ├── portfolio.rds       # Portfolio positions
+│   ├── income.rds          # Income history
+│   ├── quotations.rds      # Price quotes
+│   ├── fiis.rds           # FII metadata
+│   ├── fii_cvm.rds ⭐ NEW v3.0          # CVM fundamentalista data
+│   ├── fii_scores.rds      # Pre-calculated scores (v2.0)
+│   ├── fii_scores_enriched.rds ⭐ NEW v3.0  # Scores + deep indicators
+│   ├── fii_scores_history.rds  # Historical tracking (v2.0)
+│   ├── fii_analyses_YYYYMMDD.rds ⭐ NEW v3.0  # Individual analyses
+│   ├── pipeline_metadata.rds ⭐ NEW v3.0     # Execution metadata
+│   ├── fii_scores_enriched.csv ⭐ NEW v3.0   # CSV export (enriched)
+│   ├── .cache/             # Request cache
+│   └── .logs/              # Execution logs
+│
+├── config/                 # ✅ Configuration
 │   └── pipeline_config.yaml
 │
-├── data/                   # Dados (gitignored)
-│   ├── portfolio.rds
-│   ├── income.rds
-│   ├── quotations.rds
-│   ├── fiis.rds
-│   ├── .cache/            # NOVO: Cache de requests
-│   └── .logs/             # NOVO: Logs de execução
+├── tests/                  # ✅ Tests
+│   ├── test_parsers.R
+│   └── test_integration.R
 │
-├── tests/                  # NOVO: Testes (Fase 1 ✅)
-│   └── test_parsers.R
-│
-├── docs/                   # NOVO: Documentação (Fase 1 ✅)
+├── docs/                   # ✅ Documentation
+│   ├── pipeline_v3_usage.md ⭐ NEW v3.0    # Pipeline v3.0 usage guide
+│   ├── TUTORIAL_COMPLETE_ANALYSIS.md ⭐ NEW v3.0  # Tutorial passo-a-passo
+│   ├── MIGRATION_V2_TO_V3.md ⭐ NEW v3.0   # Migration guide
+│   ├── FAQ_PIPELINE_V3.md ⭐ NEW v3.0      # FAQ and troubleshooting
+│   ├── deep_indicators_implementation.md   # Deep indicators (v3.0)
+│   ├── FII_ANALYSIS_STATUS.md          # Analysis status (v2.0)
+│   ├── REFACTORING_SUMMARY_2026-03-20.md  # Refactoring (v2.0)
+│   ├── SESSION_SUMMARY_2026-03-20.md   # Session summary (v2.0)
 │   ├── IMPLEMENTATION_STATUS.md
-│   └── PHASE1_FOUNDATION.md
+│   ├── PHASE1_FOUNDATION.md
+│   ├── PIPELINE_GUIDE.md
+│   └── TROUBLESHOOTING.md
 │
-├── CLAUDE.md              # Instruções para Claude Code
-└── README.md              # Este arquivo
+├── reports/                # ⭐ NEW v3.0 - Generated reports
+│   └── YYYY-MM-DD/
+│       ├── TICKER_analysis.md          # Individual FII reports
+│       └── opportunities_summary.md    # Opportunities report
+│
+├── data_backup/            # ⭐ NEW v3.0 - Auto-backups
+│   └── fii_scores_*_YYYYMMDD_HHMMSS.rds
+│
+├── CHANGELOG.md ⭐ NEW v3.0      # Version history
+├── QUICKSTART.md           # Quick start guide (v2.0)
+├── QUICKSTART_ANALYSIS.md  # Analysis quick start (v2.0)
+├── YOLO_MODE_SUMMARY.md    # Project summary
+├── TEST_RESULTS.md         # Test results
+├── CLAUDE.md               # Claude Code instructions
+└── README.md               # This file
 ```
 
-## 🚀 Quick Start - Atualização de Dados
+## 🚀 Quick Start v2.0
 
-### ⚡ Pipeline Híbrido (RECOMENDADO - 3.75x mais rápido)
+### ⭐ Opção 1: Pipeline Completo com Análise (RECOMENDADO)
+
+**Atualiza dados + Calcula scores em um único comando!**
+
+```r
+# Pipeline completo: Import + Transform + Pronto para Analysis
+source("R/pipeline/main_portfolio_with_scoring.R")
+
+# Tempo: ~4 minutos
+# Output:
+#   - data/*.rds (raw data)
+#   - data/fii_scores.rds (pre-calculated scores)
+#   - data/fii_scores_history.rds (historical tracking)
+
+# Agora análises são instantâneas (<1s)!
+source("R/analysis/analysis_examples.R")
+quick_test_analysis()
+example1_portfolio_analysis()
+```
+
+**Resultado:**
+- ✅ Dados atualizados de todas as fontes
+- ✅ Scores calculados para todos os FIIs
+- ✅ Análises instantâneas disponíveis
+- ✅ Histórico de scores iniciado
+
+📖 **Documentação:** [`QUICKSTART.md`](QUICKSTART.md)
+
+---
+
+### ⚡ Opção 2: Pipeline Híbrido (Somente coleta de dados)
 
 **Atualiza todos os dados de FIIs e deixa `data/` pronto para análise!**
 

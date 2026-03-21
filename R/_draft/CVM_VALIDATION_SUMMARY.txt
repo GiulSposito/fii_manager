@@ -1,0 +1,132 @@
+================================================================================
+CVM API VALIDATION - QUICK SUMMARY
+================================================================================
+Date: 2026-03-21
+Script: R/_draft/test_cvm_api.R
+Report: R/_draft/CVM_API_FEASIBILITY_REPORT.md
+
+RESULT: GO (with hybrid approach)
+
+================================================================================
+TEST RESULTS
+================================================================================
+
+Success Rate:        100% (3/3 FIIs found)
+Data Completeness:   100% (all key fields populated)
+Download Speed:      334 KB in <2 seconds
+Parse Time:          <5 seconds for 2,433 records
+
+Test FIIs:
+  ✓ MXRF11 (HOTEL MAXINVEST) - SUCCESS
+  ✓ KNRI11 (KINEA RENDA IMOBILIARIA) - SUCCESS  
+  ✓ VISC11 (VINCI OFFICES) - SUCCESS
+
+================================================================================
+WHAT CVM PROVIDES (FREE, NO AUTH)
+================================================================================
+
+✓ Patrimônio Líquido (Net Asset Value)
+✓ Valor Patrimonial por Cota (NAV per share)
+✓ Dividend Yield (monthly %)
+✓ Rentabilidade Mensal (monthly return)
+✓ Número de Cotistas (shareholder count)
+✓ Segmento (sector: Shopping, Hotel, Logística, etc.)
+✓ Asset breakdown (real estate, securities, cash)
+✓ Management fees
+✓ Historical data (2016-present)
+✓ Monthly updates (~14 day lag)
+
+✗ VACANCY RATE - NOT AVAILABLE (use StatusInvest)
+✗ Ticker symbol (only CNPJ - needs mapping)
+✗ Market price (only NAV)
+✗ P/VP ratio (only book value)
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+HYBRID APPROACH:
+
+1. Use CVM as PRIMARY source for:
+   - Financial metrics (official, regulatory-grade)
+   - Fund fundamentals
+   - Historical analysis
+   - Data validation
+
+2. Use StatusInvest as SECONDARY for:
+   - Vacancy rates (CRITICAL - not in CVM)
+   - Market prices (P/VP)
+   - Real-time indicators
+
+3. Use Yahoo Finance for:
+   - Daily quotes
+   - Trading volume
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+Priority 1: Build CNPJ-to-Ticker mapping
+  - Scrape from StatusInvest or B3
+  - Create data/fii_cnpj_mapping.csv
+  - Validate against CVM fund names
+
+Priority 2: Implement R/import/fii_cvm_data.R
+  - import_cvm_monthly_data(year)
+  - update_cvm_cache()
+  - get_fii_cvm_indicators(tickers)
+
+Priority 3: Integrate into pipeline
+  - Add to R/pipeline/main_portfolio.R
+  - Merge CVM + StatusInvest data
+  - Add data source tracking
+
+Priority 4: Implement R/validators/cvm_validator.R
+  - Cross-validate StatusInvest vs CVM
+  - Flag discrepancies
+  - Alert on missing data
+
+================================================================================
+KEY INSIGHTS
+================================================================================
+
+1. CVM data is HIGHLY RELIABLE (official regulatory source)
+2. Vacancy is THE MISSING PIECE (must use other sources)
+3. CNPJ mapping is REQUIRED (one-time effort, ~300 FIIs)
+4. Cost: $0/month vs commercial APIs ($50-200/month)
+5. Coverage: 100% of registered FIIs (not just popular ones)
+6. Historical: 10 years available (unique value)
+
+================================================================================
+RISK ASSESSMENT
+================================================================================
+
+LOW RISK:
+  - Free, public data (no vendor lock-in)
+  - Official source (high quality)
+  - Structured format (CSV, not scraping)
+  - No rate limits (no throttling issues)
+
+MEDIUM RISK:
+  - CNPJ mapping maintenance (quarterly update needed)
+  - 14-day lag (use StatusInvest for current data)
+
+HIGH RISK:
+  - NO VACANCY DATA (must maintain StatusInvest scraping)
+
+Overall Risk: LOW (recommended for production use)
+
+================================================================================
+BOTTOM LINE
+================================================================================
+
+GO with hybrid CVM + StatusInvest approach.
+
+CVM provides the financial backbone, StatusInvest provides operational metrics.
+This combination delivers: official data quality + operational completeness.
+
+Expected development time: 3-4 days
+Expected maintenance: 1-2 hours/month
+Expected ROI: High (free data, better quality, less scraping fragility)
+
+================================================================================
