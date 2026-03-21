@@ -104,10 +104,12 @@ create_statusinvest_income_collector <- function(config, logger) {
           resultAbsoluteValue,
           dateCom,
           paymentDividend,
+          earningType,
           dy
         ) %>%
         rename(
-          ticker = code
+          ticker = code,
+          earning_type = earningType
         ) %>%
         mutate(
           # Parse números brasileiros
@@ -119,9 +121,15 @@ create_statusinvest_income_collector <- function(config, logger) {
           data_pagamento = parse_br_date(paymentDividend),
 
           # Status Invest não fornece cota_base
-          cota_base = NA_real_
+          cota_base = NA_real_,
+
+          # Normaliza earning_type para valores consistentes
+          earning_type = case_when(
+            is.na(earning_type) ~ "Rendimento",
+            TRUE ~ earning_type
+          )
         ) %>%
-        select(ticker, rendimento, data_base, data_pagamento, cota_base, dy) %>%
+        select(ticker, rendimento, data_base, data_pagamento, cota_base, dy, earning_type) %>%
         # Remove registros inválidos
         filter(
           !is.na(ticker),
