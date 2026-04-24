@@ -112,11 +112,13 @@ collect_yahoo_prices <- function(tickers, first_date = NULL, config, logger = NU
       logger$debug(glue("Download summary: {batch_result$df.control$total.success} success, {batch_result$df.control$total.not.found} not found"))
     }
 
-    # Processa resultado
+    # Normaliza para o schema canônico de quotations.rds: {ticker, price, date}
     quotations <- batch_result$df.tickers %>%
       as_tibble() %>%
-      # Remove sufixo .SA dos tickers
-      mutate(ticker = str_remove(ticker, "\\.SA")) %>%
+      mutate(ticker = gsub("\\.SA$", "", ticker)) %>%
+      select(ticker, price = price.close, date = ref.date) %>%
+      mutate(date = as.POSIXct(date)) %>%
+      filter(!is.na(price)) %>%
       distinct()
 
     if (nrow(quotations) == 0) {
@@ -210,7 +212,10 @@ fetch_tickers_prices <- function(tickers, first_date = NULL, logger = NULL) {
 
   cotacoes$df.tickers %>%
     as_tibble() %>%
-    mutate(ticker = str_remove(ticker, "\\.SA")) %>%
+    mutate(ticker = gsub("\\.SA$", "", ticker)) %>%
+    select(ticker, price = price.close, date = ref.date) %>%
+    mutate(date = as.POSIXct(date)) %>%
+    filter(!is.na(price)) %>%
     distinct()
 }
 
@@ -285,8 +290,8 @@ get_tickers_price <- function(tickers, first_date = NULL, logger = NULL) {
 #' @return Logical, TRUE if valid
 #' @keywords internal
 validate_quotations_schema <- function(data, logger = NULL) {
-  # BatchGetSymbols retorna muitas colunas, verificamos as essenciais
-  required_cols <- c("ticker", "ref.date", "price.open", "price.close", "volume")
+  # Schema canônico: {ticker, price, date}
+  required_cols <- c("ticker", "price", "date")
 
   missing <- setdiff(required_cols, names(data))
 
